@@ -1,489 +1,456 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bhosale Family Tree</title>
+  <title>My Family Tree</title>
   <style>
     :root{
-      --bgA:#07103a;
-      --bgB:#0a2b87;
-      --ink:#eef4ff;
-      --muted:rgba(255,255,255,0.75);
-      --card:rgba(10,14,30,0.55);
-      --stroke:rgba(255,255,255,0.16);
-      --glow:#ffffff;
+      --paper:#ffffff;
+      --ink:#222;
+      --trunk:#6b5648;
+      --trunk-dark:#4f4036;
+      --leaf1:#7fa77f;
+      --leaf2:#6f9b6f;
+      --leaf3:#91b791;
+      --line:#6b6b6b;
+      --box:#ffffff;
+      --boxStroke:#444;
     }
 
     html,body{height:100%; margin:0;}
     body{
-      overflow:hidden;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      color:var(--ink);
-      background:
-        radial-gradient(1200px 900px at 50% 25%, rgba(255,255,255,0.12), transparent 62%),
-        radial-gradient(900px 700px at 25% 55%, rgba(255,255,255,0.07), transparent 58%),
-        linear-gradient(180deg, var(--bgB), var(--bgA) 65%);
-    }
-
-    header{
-      position:fixed; top:0; left:0; right:0; z-index:10;
-      padding:12px 14px;
-      background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.10));
-      border-bottom:1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(10px);
-    }
-    .top{
-      max-width:1200px; margin:0 auto;
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    }
-    h1{ margin:0; font-size:clamp(16px,2.4vw,20px); letter-spacing:0.2px;}
-    .hint{ font-size:12px; color:var(--muted); opacity:0.9;}
-    .spacer{ flex:1; }
-
-    .btn{
-      background: rgba(10,14,30,0.55);
+      background: var(--paper);
+      font-family: "Georgia", "Times New Roman", serif;
       color: var(--ink);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 12px;
-      padding: 8px 10px;
-      font-size: 13px;
-      cursor: pointer;
-      user-select:none;
-      transition: transform 120ms ease, background 140ms ease, border-color 140ms ease;
-    }
-    .btn:hover{
-      background: rgba(18,24,56,0.65);
-      border-color: rgba(255,255,255,0.18);
-    }
-    .btn:active{ transform: translateY(1px) scale(0.99); }
-
-    .viewport{
-      position:absolute;
-      inset: 58px 0 0 0;
-      overflow:hidden;
-      cursor: grab;
-    }
-    .viewport:active{ cursor: grabbing; }
-
-    /* Stage we pan/zoom */
-    .stage{
-      position:absolute;
-      left:0; top:0;
-      transform-origin: 0 0;
-      will-change: transform;
     }
 
-    /* SVG tree */
-    #treeSvg{
-      position:absolute;
-      left:0; top:0;
-      pointer-events:none;
-      filter:
-        drop-shadow(0 0 14px rgba(255,255,255,0.26))
-        drop-shadow(0 0 34px rgba(255,255,255,0.14));
+    .wrap{
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      padding: 14px 12px 24px;
     }
 
-    /* Nodes */
-    .node{
-      position:absolute;
-      transform: translate(-50%, -50%);
-      min-width: 220px;
-      max-width: 280px;
-      padding: 12px 12px 10px;
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(10,14,30,0.62), rgba(0,0,0,0.22));
-      border: 1px solid rgba(255,255,255,0.14);
-      box-shadow:
-        0 18px 50px rgba(0,0,0,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-      backdrop-filter: blur(7px);
-      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-    }
-    .node:hover{
-      transform: translate(-50%,-50%) scale(1.02);
-      border-color: rgba(255,255,255,0.26);
-      box-shadow:
-        0 22px 70px rgba(0,0,0,0.55),
-        0 0 0 4px rgba(255,255,255,0.08);
-    }
-    .name{
-      font-weight: 780;
-      letter-spacing:0.2px;
-      line-height:1.15;
-      margin-bottom: 6px;
-    }
-    .tag{
-      display:inline-block;
-      font-size: 11px;
-      color: rgba(255,255,255,0.78);
-      border: 1px solid rgba(255,255,255,0.16);
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.18);
-    }
-    .sub{
-      margin-top: 6px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.70);
+    .title{
+      text-align:center;
+      font-family: "Brush Script MT", "Segoe Script", "Comic Sans MS", cursive;
+      font-size: clamp(34px, 4vw, 54px);
+      margin: 10px 0 6px;
+      color:#222;
     }
 
-    /* tiny “glow dot” near node */
-    .dot{
-      position:absolute;
-      width:10px; height:10px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.95);
-      box-shadow:
-        0 0 18px rgba(255,255,255,0.55),
-        0 0 40px rgba(255,255,255,0.24);
-      transform: translate(-50%,-50%);
-      pointer-events:none;
-      opacity: 0.8;
+    .canvas{
+      width: 100%;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* Keep the SVG responsive while preserving aspect ratio */
+    svg{ width:100%; height:auto; display:block; }
+
+    /* Boxes */
+    .nameBox{
+      fill: var(--box);
+      stroke: var(--boxStroke);
+      stroke-width: 1.6;
+    }
+    .nameText{
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-weight: 650;
+      font-size: 14px;
+      fill: #222;
+      dominant-baseline: middle;
+      text-anchor: middle;
+    }
+
+    /* Connector lines */
+    .connector{
+      stroke: var(--line);
+      stroke-width: 1.6;
+      fill: none;
+      opacity: 0.9;
+    }
+
+    /* Branch lines */
+    .branch{
+      stroke: #2f2a26;
+      stroke-width: 3.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      opacity: 0.92;
+    }
+    .branchThin{
+      stroke: #2f2a26;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      opacity: 0.9;
+    }
+
+    /* Leaves */
+    .leaf{
+      stroke: rgba(0,0,0,0.10);
+      stroke-width: 0.6;
+      opacity: 0.95;
+    }
+    .leafShadow{
+      filter: url(#softShadow);
+      opacity: 0.9;
+    }
+
+    /* Print-friendly */
+    @media print{
+      body{ background:#fff; }
+      .canvas{ box-shadow:none; border:none; border-radius:0; }
+      .wrap{ width:100%; padding:0; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="top">
-      <h1>Bhosale Family – Glowing Tree</h1>
-      <span class="hint">Drag to move • Wheel to zoom • “Fit” to center</span>
-      <div class="spacer"></div>
-      <button class="btn" id="fitBtn">Fit</button>
-      <button class="btn" id="zoomOutBtn">–</button>
-      <button class="btn" id="zoomInBtn">+</button>
-    </div>
-  </header>
+  <div class="wrap">
+    <div class="title">My Family Tree</div>
 
-  <div class="viewport" id="viewport">
-    <div class="stage" id="stage">
-      <svg id="treeSvg"></svg>
-      <div id="nodesLayer"></div>
+    <div class="canvas">
+      <!--
+        VIEWBOX is 1200 x 800 (like a printable template).
+        You only edit the NAMES array in the <script> at the bottom.
+      -->
+      <svg id="svg" viewBox="0 0 1200 800" role="img" aria-label="Family tree template">
+        <defs>
+          <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2.2" result="blur"/>
+            <feOffset dx="0" dy="1" result="off"/>
+            <feColorMatrix in="off" type="matrix"
+              values="0 0 0 0 0
+                      0 0 0 0 0
+                      0 0 0 0 0
+                      0 0 0 .22 0" result="shadow"/>
+            <feMerge>
+              <feMergeNode in="shadow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <!-- gentle watercolor-ish texture using noise -->
+          <filter id="paperNoise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+            <feColorMatrix type="matrix"
+              values="1 0 0 0 0
+                      0 1 0 0 0
+                      0 0 1 0 0
+                      0 0 0 .06 0"/>
+          </filter>
+        </defs>
+
+        <!-- subtle paper grain -->
+        <rect x="0" y="0" width="1200" height="800" fill="#fff"/>
+        <rect x="0" y="0" width="1200" height="800" filter="url(#paperNoise)" opacity="0.6"></rect>
+
+        <!-- birds (simple cute accents like template) -->
+        <g transform="translate(190 125) scale(1.05)" opacity="0.85">
+          <path d="M0 0 C12 -10, 24 -10, 36 0 C26 -2, 16 4, 0 0" fill="#88a8c6" stroke="rgba(0,0,0,.15)"/>
+          <circle cx="28" cy="-2" r="2.2" fill="#222"/>
+        </g>
+        <g transform="translate(980 130) scale(0.95)" opacity="0.85">
+          <path d="M0 0 C12 -10, 24 -10, 36 0 C26 -2, 16 4, 0 0" fill="#88a8c6" stroke="rgba(0,0,0,.15)"/>
+          <circle cx="28" cy="-2" r="2.2" fill="#222"/>
+        </g>
+
+        <!-- TREE: trunk -->
+        <g id="tree" transform="translate(0,0)">
+          <path d="
+            M 600 720
+            C 590 680, 585 640, 590 600
+            C 596 545, 596 505, 590 455
+            C 584 400, 592 340, 610 300
+            C 628 260, 630 235, 622 200
+            C 612 160, 600 140, 600 120
+            C 600 140, 588 160, 578 200
+            C 570 235, 572 260, 590 300
+            C 608 340, 616 400, 610 455
+            C 604 505, 604 545, 610 600
+            C 615 640, 610 680, 600 720
+            Z"
+            fill="url(#trunkGrad)"
+            opacity="1"/>
+          <defs>
+            <linearGradient id="trunkGrad" x1="560" y1="720" x2="650" y2="120" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#4f4036"/>
+              <stop offset="0.35" stop-color="#6b5648"/>
+              <stop offset="1" stop-color="#5a493e"/>
+            </linearGradient>
+          </defs>
+
+          <!-- major branches -->
+          <path class="branch" d="M600 260 C535 235, 470 205, 400 200" />
+          <path class="branch" d="M600 285 C665 255, 735 220, 820 215" />
+          <path class="branch" d="M600 330 C520 325, 450 335, 380 360" />
+          <path class="branch" d="M600 340 C690 345, 770 360, 860 392" />
+          <path class="branch" d="M600 410 C520 430, 470 470, 420 520" />
+          <path class="branch" d="M600 420 C690 450, 760 490, 820 545" />
+
+          <!-- smaller twigs left -->
+          <path class="branchThin" d="M420 205 C385 185, 355 170, 315 165" />
+          <path class="branchThin" d="M420 205 C395 220, 368 242, 340 268" />
+          <path class="branchThin" d="M380 360 C340 340, 305 330, 265 332" />
+          <path class="branchThin" d="M380 360 C355 390, 330 415, 300 438" />
+          <path class="branchThin" d="M420 520 C380 500, 345 492, 305 495" />
+          <path class="branchThin" d="M420 520 C395 555, 368 585, 340 612" />
+
+          <!-- smaller twigs right -->
+          <path class="branchThin" d="M820 215 C860 195, 905 182, 945 178" />
+          <path class="branchThin" d="M820 215 C850 238, 878 265, 905 292" />
+          <path class="branchThin" d="M860 392 C905 372, 945 368, 988 374" />
+          <path class="branchThin" d="M860 392 C880 422, 905 450, 930 478" />
+          <path class="branchThin" d="M820 545 C865 520, 905 512, 948 516" />
+          <path class="branchThin" d="M820 545 C852 580, 880 615, 915 640" />
+        </g>
+
+        <!-- LEAVES canopy (placed as many scattered ellipses; looks like template) -->
+        <g id="leaves" class="leafShadow"></g>
+
+        <!-- CONNECTORS + BOXES -->
+        <g id="connectors"></g>
+        <g id="boxes"></g>
+      </svg>
     </div>
   </div>
 
   <script>
-    /***********************
-     * DATA (edit names here)
-     ***********************/
-    const data = {
-      id: "root",
-      name: "Bhahusaheb Bhosale & Vasanti Bhosale",
-      tag: "Grandparents",
-      children: [
-        { id:"anil", name:"Anil Bhosale", tag:"Child", children:[
-          { id:"tejaswini", name:"Tejaswini Bhosale", tag:"Grandchild", children:[] },
-          { id:"shweta", name:"Shweta Bhosale", tag:"Grandchild", children:[] },
-          { id:"atharva", name:"Atharva Bhosale", tag:"Grandchild", children:[] },
-        ]},
-        { id:"satish", name:"Satish Bhosale", tag:"Child", children:[
-          { id:"aryan", name:"Aryan Bhosale", tag:"Grandchild", children:[] },
-        ]},
-        { id:"manish", name:"Manish Bhosale", tag:"Child", children:[
-          { id:"swanandi", name:"Swanandi Bhosale", tag:"Grandchild", children:[] },
-        ]},
-        { id:"girish", name:"Girish Bhosale", tag:"Child", children:[
-          { id:"krish", name:"Krish Bhosale", tag:"Grandchild", children:[] },
-          { id:"parth", name:"Parth Bhosale", tag:"Grandchild", children:[] },
-        ]},
-      ]
+    /***************************************************************
+     *  EDIT ONLY THIS: Put your family names here in order.
+     *
+     *  Layout: 1 bottom (trunk), 6 center-ish, 10 left, 10 right.
+     ***************************************************************/
+    const NAMES = {
+      trunk: "Grandparents / Root Name",
+      center: [
+        "Center 1", "Center 2", "Center 3", "Center 4", "Center 5", "Center 6"
+      ],
+      left: [
+        "Left 1","Left 2","Left 3","Left 4","Left 5",
+        "Left 6","Left 7","Left 8","Left 9","Left 10"
+      ],
+      right: [
+        "Right 1","Right 2","Right 3","Right 4","Right 5",
+        "Right 6","Right 7","Right 8","Right 9","Right 10"
+      ],
     };
 
-    /***********************
-     * CANVAS SIZE + PAN/ZOOM
-     ***********************/
-    const viewport = document.getElementById("viewport");
-    const stage = document.getElementById("stage");
-    const svg = document.getElementById("treeSvg");
-    const nodesLayer = document.getElementById("nodesLayer");
+    // If you want: auto-fill with your Bhosale names quickly:
+    // NAMES.trunk = "Bhahusaheb Bhosale & Vasanti Bhosale";
+    // NAMES.center = ["Anil Bhosale","Satish Bhosale","Manish Bhosale","Girish Bhosale","",""];
+    // NAMES.left = ["Tejaswini Bhosale","Shweta Bhosale","Atharva Bhosale","","","","","","",""];
+    // NAMES.right = ["Aryan Bhosale","Swanandi Bhosale","Krish Bhosale","Parth Bhosale","","","","","",""];
 
-    let view = { x: 60, y: 60, s: 1 };
-    function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
-    function applyTransform(){
-      stage.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+    const svg = document.getElementById("svg");
+    const leavesG = document.getElementById("leaves");
+    const boxesG = document.getElementById("boxes");
+    const connectorsG = document.getElementById("connectors");
+
+    // Box helper
+    function addBox(id, x, y, w, h, text){
+      const r = 16;
+
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("class","nameBox");
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", y);
+      rect.setAttribute("width", w);
+      rect.setAttribute("height", h);
+      rect.setAttribute("rx", r);
+      rect.setAttribute("ry", r);
+      rect.setAttribute("filter","url(#softShadow)");
+      boxesG.appendChild(rect);
+
+      const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("class","nameText");
+      t.setAttribute("x", x + w/2);
+      t.setAttribute("y", y + h/2);
+      t.textContent = text || "";
+      boxesG.appendChild(t);
+
+      return { id, x, y, w, h, cx:x+w/2, cy:y+h/2 };
     }
 
-    let dragging=false, last={x:0,y:0};
-    viewport.addEventListener("pointerdown",(e)=>{
-      dragging=true;
-      last={x:e.clientX,y:e.clientY};
-      viewport.setPointerCapture(e.pointerId);
-    });
-    viewport.addEventListener("pointermove",(e)=>{
-      if(!dragging) return;
-      const dx=e.clientX-last.x, dy=e.clientY-last.y;
-      last={x:e.clientX,y:e.clientY};
-      view.x += dx; view.y += dy;
-      applyTransform();
-    });
-    viewport.addEventListener("pointerup",()=> dragging=false);
+    // Connector helper (polyline style like template)
+    function connect(from, to){
+      // from/to: {x,y}
+      const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+      path.setAttribute("class","connector");
 
-    viewport.addEventListener("wheel",(e)=>{
-      e.preventDefault();
-      const delta = Math.sign(e.deltaY);
-      const factor = delta>0 ? 0.92 : 1.08;
-
-      const rect = viewport.getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-
-      const beforeX = (cx - view.x)/view.s;
-      const beforeY = (cy - view.y)/view.s;
-
-      view.s = clamp(view.s * factor, 0.45, 2.2);
-
-      const afterX = beforeX*view.s + view.x;
-      const afterY = beforeY*view.s + view.y;
-
-      view.x += (cx - afterX);
-      view.y += (cy - afterY);
-      applyTransform();
-    }, {passive:false});
-
-    document.getElementById("zoomInBtn").addEventListener("click",()=>{
-      view.s = clamp(view.s*1.12, 0.45, 2.2);
-      applyTransform();
-    });
-    document.getElementById("zoomOutBtn").addEventListener("click",()=>{
-      view.s = clamp(view.s*0.88, 0.45, 2.2);
-      applyTransform();
-    });
-    document.getElementById("fitBtn").addEventListener("click", fit);
-
-    /***********************
-     * TREE LAYOUT (actual tree style)
-     * - grandparents at trunk center
-     * - children = main branches
-     * - grandchildren = smaller branches off each main branch
-     ***********************/
-    // Stage coordinate system (big enough)
-    const W = 1600, H = 1200;
-    stage.style.width = W + "px";
-    stage.style.height = H + "px";
-
-    // Where trunk is anchored
-    const trunkBase = { x: W/2, y: H*0.86 };
-    const trunkTop  = { x: W/2, y: H*0.30 };
-
-    // main branch fan angles (in radians)
-    // left...right spread; tweak these if you want wider/narrower tree
-    function fanAngles(n){
-      if(n===1) return [0];
-      const start = -1.25;  // left
-      const end   =  1.25;  // right
-      const step = (end-start)/(n-1);
-      return Array.from({length:n}, (_,i)=> start + i*step);
+      // Template-like: go horizontal out of box then vertical then horizontal to branch point.
+      const midX = (from.x + to.x)/2;
+      const d = `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
+      path.setAttribute("d", d);
+      connectorsG.appendChild(path);
     }
 
-    // For each child: end point along a main branch
-    function mainBranchEnd(angle, length){
-      return {
-        x: trunkTop.x + Math.cos(angle)*length,
-        y: trunkTop.y - Math.sin(angle)*length*0.35, // bias upward
-      };
+    // Make a leaf ellipse
+    function leaf(x,y,rx,ry,rot,fill){
+      const e = document.createElementNS("http://www.w3.org/2000/svg","ellipse");
+      e.setAttribute("class","leaf");
+      e.setAttribute("cx", x);
+      e.setAttribute("cy", y);
+      e.setAttribute("rx", rx);
+      e.setAttribute("ry", ry);
+      e.setAttribute("fill", fill);
+      e.setAttribute("transform", `rotate(${rot} ${x} ${y})`);
+      leavesG.appendChild(e);
     }
 
-    // For each grandchild: smaller branch off main branch
-    function subBranchEnd(parentStart, parentEnd, idx, total){
-      // point along parent branch where sub-branch begins
-      const t = 0.58 + (idx/(Math.max(1,total-1)))*0.26; // 0.58..0.84
-      const sx = parentStart.x + (parentEnd.x-parentStart.x)*t;
-      const sy = parentStart.y + (parentEnd.y-parentStart.y)*t;
+    // Build leaves canopy (scatter within a canopy region; deterministic-ish)
+    function buildLeaves(){
+      // clear
+      leavesG.innerHTML = "";
 
-      // sub-branch angle (alternate above/below)
-      const baseAng = Math.atan2(parentEnd.y-parentStart.y, parentEnd.x-parentStart.x);
-      const wobble = (idx%2===0 ? -1 : 1) * (0.55 + 0.12*idx);
-      const ang = baseAng + wobble;
+      // Colors like watercolor variation
+      const palette = ["#7fa77f","#6f9b6f","#91b791","#7aa172","#8db78c"];
 
-      const len = 160 - idx*18; // slight taper
-      return {
-        start:{x:sx,y:sy},
-        end:{
-          x: sx + Math.cos(ang)*len,
-          y: sy + Math.sin(ang)*len,
+      // canopy area (rough ellipse)
+      const cx = 600, cy = 300, a = 420, b = 250;
+
+      // simple pseudo-random but stable
+      let seed = 42;
+      const rand = () => (seed = (seed*1664525 + 1013904223) % 4294967296) / 4294967296;
+
+      // place ~260 leaves
+      for(let i=0;i<260;i++){
+        // sample points inside ellipse
+        let x,y;
+        while(true){
+          const px = cx + (rand()*2-1)*a;
+          const py = cy + (rand()*2-1)*b;
+          const nx = (px-cx)/a;
+          const ny = (py-cy)/b;
+          if(nx*nx + ny*ny <= 1.0){
+            x=px; y=py;
+            break;
+          }
         }
-      };
+        const rx = 6 + rand()*10;
+        const ry = 4 + rand()*8;
+        const rot = (rand()*180)-90;
+        const fill = palette[Math.floor(rand()*palette.length)];
+
+        // keep leaves off the very bottom so it looks like template canopy
+        if(y > 520) continue;
+
+        leaf(x,y,rx,ry,rot,fill);
+      }
     }
 
-    /***********************
-     * SVG DRAW HELPERS
-     ***********************/
-    function svgEl(tag, attrs={}){
-      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-      for(const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
-      return el;
-    }
-
-    function curvePath(a,b,bend=120){
-      // smooth cubic curve between points
-      const mx = (a.x+b.x)/2;
-      const my = (a.y+b.y)/2;
-      // perpendicular-ish bend
-      const dx = b.x-a.x, dy = b.y-a.y;
-      const nx = -dy, ny = dx;
-      const nlen = Math.max(1, Math.hypot(nx,ny));
-      const ox = (nx/nlen)*bend;
-      const oy = (ny/nlen)*bend;
-
-      const c1 = { x: (a.x+mx)/2 + ox*0.20, y:(a.y+my)/2 + oy*0.20 };
-      const c2 = { x: (mx+b.x)/2 + ox*0.20, y:(my+b.y)/2 + oy*0.20 };
-      return `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`;
-    }
-
-    function drawGlowPath(d, w1, o1, w2, o2){
-      // thick soft glow
-      const p1 = svgEl("path", {
-        d, fill:"none", stroke:"white", "stroke-width": String(w1),
-        "stroke-linecap":"round", "stroke-linejoin":"round", opacity: String(o1),
-        filter:"url(#softGlow)"
-      });
-      // crisp core
-      const p2 = svgEl("path", {
-        d, fill:"none", stroke:"white", "stroke-width": String(w2),
-        "stroke-linecap":"round", "stroke-linejoin":"round", opacity: String(o2),
-        filter:"url(#hardGlow)"
-      });
-      return [p1,p2];
-    }
-
-    /***********************
-     * RENDER TREE
-     ***********************/
+    // Layout boxes similar to your template image
     function render(){
-      // SVG setup
-      svg.setAttribute("width", W);
-      svg.setAttribute("height", H);
-      svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-      svg.innerHTML = "";
+      boxesG.innerHTML = "";
+      connectorsG.innerHTML = "";
 
-      const defs = svgEl("defs");
-      defs.innerHTML = `
-        <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="7.5" result="blur"/>
-          <feMerge>
-            <feMergeNode in="blur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-        <filter id="hardGlow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="2.8" result="blur"/>
-          <feMerge>
-            <feMergeNode in="blur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      `;
-      svg.appendChild(defs);
+      // --- trunk box (bottom center)
+      const trunkBox = addBox("trunk", 450, 690, 300, 56, NAMES.trunk);
 
-      // Clear nodes
-      nodesLayer.innerHTML = "";
+      // Connect trunk box to trunk center
+      connect({x: trunkBox.cx, y: trunkBox.y}, {x: 600, y: 650});
 
-      // --- Draw trunk
-      const trunkD = curvePath(trunkBase, trunkTop, 0);
-      drawGlowPath(trunkD, 22, 0.12, 10, 0.70).forEach(p=>svg.appendChild(p));
+      // --- center boxes (around inner canopy)
+      const centerPos = [
+        {x: 465, y: 420}, // left-mid
+        {x: 675, y: 420}, // right-mid
+        {x: 500, y: 345}, // left-inner
+        {x: 700, y: 345}, // right-inner
+        {x: 540, y: 505}, // left-lower
+        {x: 660, y: 505}, // right-lower
+      ];
+      const centerTargets = [
+        {x: 520, y: 405},
+        {x: 680, y: 405},
+        {x: 520, y: 330},
+        {x: 700, y: 330},
+        {x: 520, y: 520},
+        {x: 700, y: 535},
+      ];
 
-      // Root node placed on trunk (near base, like “standing at trunk”)
-      const rootPos = { x: trunkBase.x, y: trunkBase.y + 36 };
-      addNode(data, rootPos, true);
-
-      // --- Draw main branches for children
-      const kids = data.children || [];
-      const angles = fanAngles(kids.length);
-      const mainLen = 520;
-
-      kids.forEach((child, i)=>{
-        const ang = angles[i];
-        const end = mainBranchEnd(ang, mainLen);
-
-        const branchStart = { x: trunkTop.x, y: trunkTop.y + 18 };
-        const branchEnd = end;
-
-        const bend = 160 * (Math.abs(ang)/1.25);
-        const d = curvePath(branchStart, branchEnd, (ang>0? -1:1)*bend);
-
-        // main branch thickness
-        drawGlowPath(d, 14, 0.12, 6.5, 0.72).forEach(p=>svg.appendChild(p));
-
-        // child node near end of main branch
-        const childPos = { x: branchEnd.x, y: branchEnd.y };
-        addNode(child, childPos, false);
-
-        // --- Grandchildren sub-branches
-        const gkids = child.children || [];
-        gkids.forEach((g, gi)=>{
-          const sb = subBranchEnd(branchStart, branchEnd, gi, gkids.length);
-
-          const d2 = curvePath(sb.start, sb.end, (gi%2===0 ? 90 : -90));
-          drawGlowPath(d2, 9, 0.10, 4.4, 0.70).forEach(p=>svg.appendChild(p));
-
-          addNode(g, sb.end, false, true);
-        });
-
-        // small “spark” at main branch tip
-        const spark = svgEl("circle", {
-          cx: String(branchEnd.x),
-          cy: String(branchEnd.y),
-          r: "3.2",
-          fill: "white",
-          opacity: "0.75",
-          filter: "url(#hardGlow)"
-        });
-        svg.appendChild(spark);
+      centerPos.forEach((p,i)=>{
+        const b = addBox(`c${i}`, p.x, p.y, 160, 46, NAMES.center[i] || "");
+        connect({x: b.x, y: b.cy}, centerTargets[i]); // from left edge of box
       });
 
-      // Fit on first render
-      fit();
+      // --- left side boxes (5 rows, 2 columns like template)
+      // each row has a pair (top/bottom) connected to a vertical “spine”
+      const leftRowsY = [170, 280, 390, 500, 610];
+      const leftX1 = 40, leftX2 = 140; // two columns
+      const spineX = 265;
+
+      // draw spines (vertical line segments)
+      leftRowsY.forEach((y, ri)=>{
+        // spine segment per row
+        const seg = document.createElementNS("http://www.w3.org/2000/svg","path");
+        seg.setAttribute("class","connector");
+        seg.setAttribute("d", `M ${spineX} ${y-10} L ${spineX} ${y+62}`);
+        connectorsG.appendChild(seg);
+
+        // connect spine to a branch-ish point
+        const branchPoint = [
+          {x: 360, y: 210},
+          {x: 330, y: 285},
+          {x: 300, y: 365},
+          {x: 305, y: 505},
+          {x: 340, y: 610},
+        ][ri];
+
+        // horizontal from spine to branch
+        const h = document.createElementNS("http://www.w3.org/2000/svg","path");
+        h.setAttribute("class","connector");
+        h.setAttribute("d", `M ${spineX} ${y+26} L ${branchPoint.x} ${branchPoint.y}`);
+        connectorsG.appendChild(h);
+
+        // boxes pair
+        const top = addBox(`l${ri}a`, leftX1, y, 190, 44, NAMES.left[ri*2] || "");
+        const bot = addBox(`l${ri}b`, leftX2, y+48, 190, 44, NAMES.left[ri*2+1] || "");
+
+        // connect boxes to spine
+        connect({x: top.x+top.w, y: top.cy}, {x: spineX, y: y+26});
+        connect({x: bot.x+bot.w, y: bot.cy}, {x: spineX, y: y+26});
+      });
+
+      // --- right side boxes (5 rows, 2 columns mirrored)
+      const rightRowsY = [170, 280, 390, 500, 610];
+      const rightX1 = 970, rightX2 = 870;
+      const spineXR = 935;
+
+      rightRowsY.forEach((y, ri)=>{
+        const seg = document.createElementNS("http://www.w3.org/2000/svg","path");
+        seg.setAttribute("class","connector");
+        seg.setAttribute("d", `M ${spineXR} ${y-10} L ${spineXR} ${y+62}`);
+        connectorsG.appendChild(seg);
+
+        const branchPoint = [
+          {x: 840, y: 215},
+          {x: 880, y: 295},
+          {x: 915, y: 390},
+          {x: 910, y: 515},
+          {x: 875, y: 640},
+        ][ri];
+
+        const h = document.createElementNS("http://www.w3.org/2000/svg","path");
+        h.setAttribute("class","connector");
+        h.setAttribute("d", `M ${spineXR} ${y+26} L ${branchPoint.x} ${branchPoint.y}`);
+        connectorsG.appendChild(h);
+
+        const top = addBox(`r${ri}a`, rightX1, y, 190, 44, NAMES.right[ri*2] || "");
+        const bot = addBox(`r${ri}b`, rightX2, y+48, 190, 44, NAMES.right[ri*2+1] || "");
+
+        connect({x: top.x, y: top.cy}, {x: spineXR, y: y+26});
+        connect({x: bot.x, y: bot.cy}, {x: spineXR, y: y+26});
+      });
     }
 
-    function addNode(person, pos, isRoot=false, isGrandchild=false){
-      const el = document.createElement("div");
-      el.className = "node";
-      el.style.left = pos.x + "px";
-      el.style.top  = pos.y + "px";
-
-      const tag = person.tag || (isRoot ? "Grandparents" : (isGrandchild ? "Grandchild" : "Child"));
-      const extra = isRoot ? "Trunk" : (isGrandchild ? "Branch tip" : "Branch");
-
-      el.innerHTML = `
-        <div class="name">${escapeHtml(person.name)}</div>
-        <span class="tag">${escapeHtml(tag)}</span>
-        <div class="sub">${extra}</div>
-      `;
-      nodesLayer.appendChild(el);
-
-      // glow dot near node
-      const dot = document.createElement("div");
-      dot.className = "dot";
-      dot.style.left = pos.x + "px";
-      dot.style.top  = pos.y + "px";
-      nodesLayer.appendChild(dot);
-    }
-
-    function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, m => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[m]));
-    }
-
-    /***********************
-     * FIT TO VIEW
-     ***********************/
-    function fit(){
-      const vw = viewport.clientWidth;
-      const vh = viewport.clientHeight;
-
-      // stage bounds (W,H) are fixed
-      const scale = clamp(Math.min(vw/(W+120), vh/(H+120)), 0.45, 1.25);
-      view.s = scale;
-      view.x = (vw - W*scale)/2;
-      view.y = (vh - H*scale)/2;
-      applyTransform();
-    }
-
-    // Init
+    buildLeaves();
     render();
-    applyTransform();
-    window.addEventListener("resize", ()=>{ /* optional */ });
   </script>
 </body>
 </html>
