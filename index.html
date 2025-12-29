@@ -3,6 +3,509 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Family Tree</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --ink:#1b1b1b;
+      --line:#2b2b2b;
+      --boxStroke:#1f2937;
+      --blue:#b9d8ff;
+      --red:#ffb7b7;
+      --shadow: 0 10px 20px rgba(0,0,0,.08);
+    }
+
+    html,body{height:100%; margin:0;}
+    body{
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+
+    .wrap{
+      width:min(1200px, 96vw);
+      margin:0 auto;
+      padding: 14px 12px 28px;
+    }
+
+    h1{
+      text-align:center;
+      margin: 6px 0 10px;
+      font-size: 30px;
+      letter-spacing: .3px;
+      font-weight: 800;
+    }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+      margin: 6px 0 14px;
+    }
+
+    .btn{
+      background:#111;
+      color:#fff;
+      border:0;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: var(--shadow);
+    }
+    .btn.secondary{
+      background:#fff;
+      color:#111;
+      border:1px solid rgba(0,0,0,.2);
+      box-shadow:none;
+    }
+
+    .status{
+      font-size: 13px;
+      color: rgba(0,0,0,0.72);
+      padding: 8px 10px;
+      border: 1px dashed rgba(0,0,0,0.25);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.03);
+      min-width: 280px;
+      text-align:center;
+    }
+
+    .canvas{
+      background:#fff;
+      border:1px solid rgba(0,0,0,.10);
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow: 0 14px 40px rgba(0,0,0,.08);
+    }
+
+    svg{ width:100%; height:auto; display:block; }
+
+    /* Nodes */
+    .node-rect{
+      stroke: var(--boxStroke);
+      stroke-width: 1.8;
+      rx: 10;
+      ry: 10;
+      cursor: pointer;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.08));
+    }
+    .node-text{
+      font-weight: 750;
+      font-size: 14px;
+      fill: #111;
+      dominant-baseline: middle;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    /* Edges */
+    .edge{
+      stroke: var(--line);
+      stroke-width: 2;
+      fill: none;
+      opacity: .9;
+    }
+
+    /* Appear animation (top -> bottom) */
+    .nodeGroup{
+      opacity: 0;
+      transform-origin: center;
+      transform: translateY(-6px) scale(0.98);
+    }
+    .nodeGroup.show{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition: opacity 500ms ease, transform 500ms ease;
+    }
+    .edge.hide{
+      opacity: 0;
+    }
+    .edge.show{
+      opacity: 1;
+      transition: opacity 420ms ease;
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .nodeGroup{ opacity:1; transform:none; }
+      .nodeGroup.show{ transition:none; }
+      .edge.show{ transition:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Family Tree</h1>
+
+    <div class="controls">
+      <button class="btn" id="saveBtn">Save</button>
+      <button class="btn secondary" id="reloadBtn">Reload</button>
+      <button class="btn secondary" id="animateBtn">Play Animation</button>
+      <div class="status" id="status">Loading…</div>
+    </div>
+
+    <div class="canvas">
+      <svg id="svg" viewBox="0 0 1200 620" aria-label="Family tree diagram">
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Load Supabase ONCE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    /************************************************************
+     * EDIT THESE VALUES
+     ************************************************************/
+    const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+    const TABLE_NAME = "family_tree";   // your table name
+    const TREE_ID = "bhosale";          // row id
+
+    const statusEl = document.getElementById("status");
+    const saveBtn = document.getElementById("saveBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const animateBtn = document.getElementById("animateBtn");
+
+    const svg = document.getElementById("svg");
+    const edgesG = document.getElementById("edges");
+    const nodesG = document.getElementById("nodes");
+
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Data format in Supabase row:
+    // {
+    //   "root": ["Grandpa", "Grandma"],
+    //   "children": [
+    //      { "name":"Anil", "spouse": "", "kids":["Tejaswini","Shweta","Atharva"] },
+    //      { "name":"Satish", "spouse": "", "kids":["Aryan"] },
+    //      ...
+    //   ]
+    // }
+    function defaultTree(){
+      return {
+        root: ["Bhahusaheb Bhosale", "Vasanti Bhosale"],
+        children: [
+          { name: "Anil Bhosale", spouse: "", kids: ["Tejaswini Bhosale","Shweta Bhosale","Atharva Bhosale"] },
+          { name: "Satish Bhosale", spouse: "", kids: ["Aryan Bhosale"] },
+          { name: "Manish Bhosale", spouse: "", kids: ["Swanandi Bhosale"] },
+          { name: "Girish Bhosale", spouse: "", kids: ["Krish Bhosale","Parth Bhosale"] }
+        ]
+      };
+    }
+
+    let CURRENT = null;
+
+    function setStatus(msg){ statusEl.textContent = msg; }
+
+    async function loadFromSupabase(){
+      setStatus("Loading from Supabase…");
+      const { data, error } = await db
+        .from(TABLE_NAME)
+        .select("data")
+        .eq("id", TREE_ID)
+        .single();
+
+      if (error) {
+        console.warn(error);
+        CURRENT = defaultTree();
+        setStatus("Could not load row. Using defaults (you can still Save).");
+        renderDiagram(CURRENT);
+        playAnimation();
+        return;
+      }
+
+      CURRENT = (data && data.data) ? data.data : defaultTree();
+      setStatus("Loaded ✅ Click a box to edit.");
+      renderDiagram(CURRENT);
+      playAnimation();
+    }
+
+    async function saveToSupabase(){
+      if (!CURRENT) return;
+      setStatus("Saving…");
+      const { error } = await db
+        .from(TABLE_NAME)
+        .update({ data: CURRENT })
+        .eq("id", TREE_ID);
+
+      if (error) {
+        console.error(error);
+        setStatus("Save failed ❌ Check RLS policies (SELECT/UPDATE true).");
+        alert("Save failed. Check console (F12).");
+        return;
+      }
+      setStatus("Saved ✅");
+    }
+
+    saveBtn.addEventListener("click", saveToSupabase);
+    reloadBtn.addEventListener("click", loadFromSupabase);
+    animateBtn.addEventListener("click", playAnimation);
+
+    /************************************************************
+     * Layout like the image:
+     * - Level 0: root couple (2 boxes at top)
+     * - Level 1: couples (child + spouse) row
+     * - Level 2: kids under each couple
+     ************************************************************/
+    const BOX_W = 150;
+    const BOX_H = 42;
+    const GAP_X = 24;
+    const GAP_Y = 80;
+
+    function nodeKey(type, a, b){
+      return `${type}:${a}:${b ?? ""}`;
+    }
+
+    function renderDiagram(tree){
+      edgesG.innerHTML = "";
+      nodesG.innerHTML = "";
+
+      const rootA = tree.root?.[0] ?? "Root A";
+      const rootB = tree.root?.[1] ?? "Root B";
+
+      const children = Array.isArray(tree.children) ? tree.children : [];
+      const cols = Math.max(1, children.length);
+
+      // Compute horizontal slots per child "family unit"
+      const unitW = (BOX_W * 2) + GAP_X; // child + spouse
+      const totalW = cols * unitW + (cols - 1) * 40;
+      const startX = (1200 - totalW) / 2;
+
+      // Root couple centered
+      const rootY = 70;
+      const rootX = 600 - (BOX_W + 16); // left box starts here
+      const r1 = addNode(nodeKey("root",0), rootX, rootY, BOX_W, BOX_H, rootA, "blue");
+      const r2 = addNode(nodeKey("root",1), rootX + BOX_W + 32, rootY, BOX_W, BOX_H, rootB, "red");
+
+      // Marriage connector (between root boxes)
+      const rootMid = { x: (r1.cx + r2.cx) / 2, y: r1.cy };
+      addEdge({x:r1.x2, y:r1.cy}, {x:r2.x1, y:r2.cy}); // horizontal line
+
+      // Down stem to children row
+      const stemTop = { x: rootMid.x, y: rootMid.y + (BOX_H/2) + 10 };
+      const stemBottom = { x: rootMid.x, y: rootY + GAP_Y };
+      addEdge(stemTop, stemBottom);
+
+      // Children couples row
+      const couplesY = rootY + GAP_Y;
+
+      // Determine where the horizontal "bus" line sits
+      // It will run across all child family units
+      const busLeft = startX + (unitW/2);
+      const busRight = startX + (cols-1)* (unitW + 40) + (unitW/2);
+      addEdge({x:busLeft, y:couplesY-20}, {x:busRight, y:couplesY-20});
+
+      // connect stem to bus
+      addEdge({x:stemBottom.x, y:stemBottom.y - 20}, {x:stemBottom.x, y:couplesY-20});
+
+      // Place each child unit and connect
+      const allNodeGroups = []; // for animation ordering
+      const allEdges = [];
+
+      // collect created groups (for animation later)
+      function trackLast(){
+        allNodeGroups.push(nodesG.lastElementChild);
+      }
+      function trackEdge(){
+        allEdges.push(edgesG.lastElementChild);
+      }
+
+      // Track root nodes too
+      allNodeGroups.push(r1.group, r2.group);
+
+      for(let i=0;i<cols;i++){
+        const unitX = startX + i*(unitW + 40);
+
+        const childName = children[i]?.name ?? "";
+        const spouseName = children[i]?.spouse ?? "";
+        const kids = Array.isArray(children[i]?.kids) ? children[i].kids : [];
+
+        const c1 = addNode(nodeKey("child", i, "a"), unitX, couplesY, BOX_W, BOX_H, childName || "Name", "blue");
+        const c2 = addNode(nodeKey("child", i, "b"), unitX + BOX_W + GAP_X, couplesY, BOX_W, BOX_H, spouseName || "Name", "red");
+
+        allNodeGroups.push(c1.group, c2.group);
+
+        // marriage line between couple
+        addEdge({x:c1.x2, y:c1.cy}, {x:c2.x1, y:c2.cy}); trackEdge();
+
+        // vertical connector from bus down to couple midpoint
+        const coupleMidX = (c1.cx + c2.cx)/2;
+        addEdge({x:coupleMidX, y:couplesY-20}, {x:coupleMidX, y:couplesY}); trackEdge();
+
+        // Kids row under each couple (stacked)
+        const kidsY0 = couplesY + GAP_Y;
+        const kidGapY = 58;
+
+        // If 0 kids, still draw nothing
+        kids.forEach((kidName, k)=>{
+          const kidY = kidsY0 + k * kidGapY;
+          const kidX = unitX + (unitW/2) - (BOX_W/2);
+
+          const kid = addNode(nodeKey("kid", i, k), kidX, kidY, BOX_W, BOX_H, kidName || "Name", (k%2===0 ? "blue":"red"));
+          allNodeGroups.push(kid.group);
+
+          // vertical line down from couple mid to first kid
+          if (k === 0){
+            addEdge({x:coupleMidX, y:couplesY + BOX_H}, {x:coupleMidX, y:kidY}); trackEdge();
+          }
+
+          // line from couple mid to each kid (short)
+          addEdge({x:coupleMidX, y:kidY + (BOX_H/2)}, {x:kidX, y:kidY + (BOX_H/2)}); trackEdge();
+        });
+      }
+
+      // store for animation
+      window.__NODE_GROUPS__ = allNodeGroups;
+      window.__EDGES__ = allEdges;
+    }
+
+    function addNode(key, x, y, w, h, text, colorMode){
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.classList.add("nodeGroup");
+      g.dataset.key = key;
+
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.classList.add("node-rect");
+
+      // Color like your example (blue/red)
+      rect.setAttribute("fill", colorMode === "red" ? "var(--red)" : "var(--blue)");
+
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", y);
+      rect.setAttribute("width", w);
+      rect.setAttribute("height", h);
+
+      rect.addEventListener("click", () => editNode(key));
+
+      const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.classList.add("node-text");
+      t.setAttribute("x", x + w/2);
+      t.setAttribute("y", y + h/2);
+      t.textContent = text;
+
+      g.appendChild(rect);
+      g.appendChild(t);
+      nodesG.appendChild(g);
+
+      return {
+        group: g,
+        x1: x, x2: x+w,
+        y1: y, y2: y+h,
+        cx: x+w/2,
+        cy: y+h/2
+      };
+    }
+
+    function addEdge(a, b){
+      const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+      p.classList.add("edge", "hide");
+
+      // neat elbow connector
+      const midY = (a.y + b.y)/2;
+      const d = `M ${a.x} ${a.y} L ${a.x} ${midY} L ${b.x} ${midY} L ${b.x} ${b.y}`;
+      p.setAttribute("d", d);
+
+      edgesG.appendChild(p);
+      return p;
+    }
+
+    function editNode(key){
+      if (!CURRENT) return;
+
+      // key formats:
+      // root:0
+      // child:2:a
+      // child:2:b
+      // kid:2:1
+
+      const parts = key.split(":");
+      const type = parts[0];
+
+      if (type === "root"){
+        const idx = parseInt(parts[1], 10);
+        const prev = CURRENT.root?.[idx] ?? "";
+        const next = prompt("Edit name:", prev);
+        if (next === null) return;
+        CURRENT.root[idx] = next;
+        renderDiagram(CURRENT);
+        playAnimation(false);
+        setStatus("Edited (not saved yet). Click Save.");
+        return;
+      }
+
+      if (type === "child"){
+        const i = parseInt(parts[1], 10);
+        const side = parts[2]; // a/b
+        const prev = side === "b" ? (CURRENT.children[i].spouse || "") : (CURRENT.children[i].name || "");
+        const next = prompt("Edit name:", prev);
+        if (next === null) return;
+        if (side === "b") CURRENT.children[i].spouse = next;
+        else CURRENT.children[i].name = next;
+
+        renderDiagram(CURRENT);
+        playAnimation(false);
+        setStatus("Edited (not saved yet). Click Save.");
+        return;
+      }
+
+      if (type === "kid"){
+        const i = parseInt(parts[1], 10);
+        const k = parseInt(parts[2], 10);
+        const prev = CURRENT.children[i]?.kids?.[k] ?? "";
+        const next = prompt("Edit name:", prev);
+        if (next === null) return;
+        CURRENT.children[i].kids[k] = next;
+
+        renderDiagram(CURRENT);
+        playAnimation(false);
+        setStatus("Edited (not saved yet). Click Save.");
+      }
+    }
+
+    // Appear one-by-one (top->bottom order)
+    function playAnimation(reset = true){
+      const groups = window.__NODE_GROUPS__ || [];
+      const edges = window.__EDGES__ || [];
+
+      // reset
+      if (reset){
+        groups.forEach(g => g.classList.remove("show"));
+        edges.forEach(e => { e.classList.remove("show"); e.classList.add("hide"); });
+      }
+
+      // Show edges after their related nodes begin appearing
+      let delay = 0;
+      const step = 130; // speed of appearance
+
+      // show nodes in DOM order (already top->bottom)
+      groups.forEach((g, idx)=>{
+        setTimeout(() => g.classList.add("show"), delay);
+        delay += step;
+      });
+
+      // show edges slightly after nodes start
+      let edgeDelay = step * 2;
+      edges.forEach((e)=>{
+        setTimeout(() => { e.classList.remove("hide"); e.classList.add("show"); }, edgeDelay);
+        edgeDelay += 55;
+      });
+    }
+
+    // Start
+    loadFromSupabase();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>My Family Tree</title>
   <style>
     :root{
