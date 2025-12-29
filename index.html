@@ -8,10 +8,6 @@
     :root{
       --paper:#ffffff;
       --ink:#222;
-      --trunk:#6b5648;
-      --leaf1:#7fa77f;
-      --leaf2:#6f9b6f;
-      --leaf3:#91b791;
       --line:#6b6b6b;
       --box:#ffffff;
       --boxStroke:#444;
@@ -260,33 +256,31 @@
     </div>
   </div>
 
-  <!-- Supabase JS (non-module, works on GitHub Pages) -->
+  <!-- IMPORTANT: Load Supabase JS ONLY ONCE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     /************************************************************
-     * EDIT THESE 3 VALUES
+     * EDIT THESE VALUES
      ************************************************************/
     const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
     const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
-    const TABLE_NAME = "family_tree";     // change if your table name is different
-    const TREE_ID = "bhosale";
+    const TABLE_NAME = "family_tree";  // your table name
+    const TREE_ID = "bhosale";         // the row id you inserted
 
     const statusEl = document.getElementById("status");
     const saveBtn = document.getElementById("saveBtn");
     const reloadBtn = document.getElementById("reloadBtn");
 
-    const svg = document.getElementById("svg");
     const leavesG = document.getElementById("leaves");
     const boxesG = document.getElementById("boxes");
     const connectorsG = document.getElementById("connectors");
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ✅ Create the client ONCE (no duplicates)
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Local state (what you edit on the page)
     let CURRENT = null;
 
-    // Default data if row is missing
     function defaultTree() {
       return {
         trunk: "Bhahusaheb Bhosale & Vasanti Bhosale",
@@ -296,11 +290,12 @@
       };
     }
 
-    function setStatus(msg) { statusEl.textContent = msg; }
+    function setStatus(msg){ statusEl.textContent = msg; }
 
-    async function loadFromSupabase() {
+    async function loadFromSupabase(){
       setStatus("Loading from Supabase…");
-      const { data, error } = await supabase
+
+      const { data, error } = await db
         .from(TABLE_NAME)
         .select("data")
         .eq("id", TREE_ID)
@@ -308,30 +303,31 @@
 
       if (error) {
         console.warn(error);
-        setStatus("Could not load row. Using defaults. (You can still Save)");
         CURRENT = defaultTree();
         renderAll();
+        setStatus("Could not load row (using defaults). You can still Save.");
         return;
       }
 
-      CURRENT = data.data || defaultTree();
-      setStatus("Loaded ✅ Click a box to edit, then Save.");
+      CURRENT = (data && data.data) ? data.data : defaultTree();
       renderAll();
+      setStatus("Loaded ✅ Click a box to edit, then Save.");
     }
 
-    async function saveToSupabase() {
+    async function saveToSupabase(){
       if (!CURRENT) return;
 
       setStatus("Saving…");
-      const { error } = await supabase
+
+      const { error } = await db
         .from(TABLE_NAME)
         .update({ data: CURRENT })
         .eq("id", TREE_ID);
 
       if (error) {
         console.error(error);
-        setStatus("Save failed ❌ Check console + RLS policies.");
-        alert("Save failed. Open console (F12) to see error.");
+        setStatus("Save failed ❌ Check your RLS policies (SELECT/UPDATE true).");
+        alert("Save failed. Open console (F12) for error details.");
         return;
       }
 
@@ -344,7 +340,7 @@
     /***********************
      * SVG helpers
      ***********************/
-    function addBox(key, x, y, w, h, text) {
+    function addBox(key, x, y, w, h, text){
       const r = 16;
 
       const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
@@ -356,7 +352,6 @@
       rect.setAttribute("rx", r);
       rect.setAttribute("ry", r);
       rect.setAttribute("filter","url(#softShadow)");
-      rect.dataset.key = key;
       rect.addEventListener("click", () => editBox(key));
       boxesG.appendChild(rect);
 
@@ -370,12 +365,11 @@
       return { x, y, w, h, cx:x+w/2, cy:y+h/2 };
     }
 
-    function connect(from, to) {
+    function connect(from, to){
       const path = document.createElementNS("http://www.w3.org/2000/svg","path");
       path.setAttribute("class","connector");
       const midX = (from.x + to.x)/2;
-      const d = `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
-      path.setAttribute("d", d);
+      path.setAttribute("d", `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`);
       connectorsG.appendChild(path);
     }
 
@@ -520,7 +514,6 @@
     function editBox(key){
       if (!CURRENT) return;
 
-      // key formats: "trunk" OR "center.2" OR "left.7" OR "right.1"
       if (key === "trunk") {
         const next = prompt("Edit trunk name:", CURRENT.trunk || "");
         if (next === null) return;
