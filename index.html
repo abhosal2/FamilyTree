@@ -105,7 +105,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px;
+            gap: 60px;
+            position: relative;
         }
 
         .generation {
@@ -113,6 +114,26 @@
             justify-content: center;
             gap: 30px;
             flex-wrap: wrap;
+            position: relative;
+        }
+
+        .connector-line {
+            position: absolute;
+            background: #555;
+            z-index: 0;
+        }
+
+        .vertical-line {
+            width: 2px;
+            height: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .horizontal-line {
+            height: 2px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
         .person-card {
@@ -125,6 +146,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             transition: all 0.2s;
             position: relative;
+            z-index: 1;
         }
 
         .person-card:hover {
@@ -305,6 +327,55 @@
             background: #4a4a4a;
         }
 
+        .marathi-helper {
+            margin-top: 10px;
+            padding: 15px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 2px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .marathi-helper-title {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .name-suggestions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .name-suggestion {
+            padding: 8px;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .name-suggestion:hover {
+            background: #3a3a3a;
+            border-color: #4a4a4a;
+        }
+
+        .name-suggestion-en {
+            color: #999;
+            font-size: 10px;
+        }
+
+        .name-suggestion-mr {
+            color: #e0e0e0;
+            margin-top: 3px;
+        }
+
         .save-indicator {
             position: fixed;
             top: 20px;
@@ -371,6 +442,10 @@
                 <div class="form-group">
                     <label>Name:</label>
                     <input type="text" id="personName" required>
+                    <div class="marathi-helper">
+                        <div class="marathi-helper-title">Common Marathi Names (Click to use)</div>
+                        <div class="name-suggestions" id="nameSuggestions"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Birth Year:</label>
@@ -383,6 +458,10 @@
                 <div class="form-group">
                     <label>Spouse/Partner Name:</label>
                     <input type="text" id="spouseName" placeholder="Optional">
+                    <div class="marathi-helper">
+                        <div class="marathi-helper-title">Common Marathi Names (Click to use)</div>
+                        <div class="name-suggestions" id="spouseNameSuggestions"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Relationship Type:</label>
@@ -433,7 +512,8 @@
                 placeholder2: 'Optional',
                 saveIndicator: 'Changes saved!',
                 deleteConfirm: 'Are you sure you want to delete this person?',
-                resetConfirm: 'Are you sure you want to reset the entire family tree? This cannot be undone.'
+                resetConfirm: 'Are you sure you want to reset the entire family tree? This cannot be undone.',
+                marathiHelper: 'Common Marathi Names (Click to use)'
             },
             mr: {
                 title: 'कौटुंबिक वृक्ष',
@@ -461,8 +541,48 @@
                 placeholder2: 'पर्यायी',
                 saveIndicator: 'बदल जतन झाले!',
                 deleteConfirm: 'तुम्हाला खात्री आहे की तुम्ही ही व्यक्ती हटवू इच्छिता?',
-                resetConfirm: 'तुम्हाला खात्री आहे की तुम्ही संपूर्ण कौटुंबिक वृक्ष रीसेट करू इच्छिता? हे पूर्ववत केले जाऊ शकत नाही.'
+                resetConfirm: 'तुम्हाला खात्री आहे की तुम्ही संपूर्ण कौटुंबिक वृक्ष रीसेट करू इच्छिता? हे पूर्ववत केले जाऊ शकत नाही.',
+                marathiHelper: 'सामान्य मराठी नावे (वापरण्यासाठी क्लिक करा)'
             }
+        };
+
+        const marathiNames = {
+            male: [
+                { en: 'Grandfather', mr: 'आजोबा' },
+                { en: 'Ajoba', mr: 'आजोबा' },
+                { en: 'Father', mr: 'बाबा' },
+                { en: 'Baba', mr: 'बाबा' },
+                { en: 'Uncle', mr: 'काका' },
+                { en: 'Kaka', mr: 'काका' },
+                { en: 'Rajesh', mr: 'राजेश' },
+                { en: 'Amit', mr: 'अमित' },
+                { en: 'Suresh', mr: 'सुरेश' },
+                { en: 'Prakash', mr: 'प्रकाश' },
+                { en: 'Mahesh', mr: 'महेश' },
+                { en: 'Rahul', mr: 'राहुल' },
+                { en: 'Aditya', mr: 'आदित्य' },
+                { en: 'Nikhil', mr: 'निखिल' },
+                { en: 'Shantanu', mr: 'शांतनू' },
+                { en: 'Ganesh', mr: 'गणेश' }
+            ],
+            female: [
+                { en: 'Grandmother', mr: 'आजी' },
+                { en: 'Aji', mr: 'आजी' },
+                { en: 'Mother', mr: 'आई' },
+                { en: 'Aai', mr: 'आई' },
+                { en: 'Aunt', mr: 'काकी' },
+                { en: 'Kaki', mr: 'काकी' },
+                { en: 'Sunita', mr: 'सुनीता' },
+                { en: 'Priya', mr: 'प्रिया' },
+                { en: 'Anjali', mr: 'अंजली' },
+                { en: 'Madhuri', mr: 'माधुरी' },
+                { en: 'Kavita', mr: 'कविता' },
+                { en: 'Shweta', mr: 'श्वेता' },
+                { en: 'Pooja', mr: 'पूजा' },
+                { en: 'Shalini', mr: 'शालिनी' },
+                { en: 'Vaishali', mr: 'वैशाली' },
+                { en: 'Manisha', mr: 'मनिषा' }
+            ]
         };
 
         function changeLanguage() {
@@ -527,6 +647,12 @@
                     grandparentGen.appendChild(createPersonCard(person, 'grandparent'));
                 });
                 tree.appendChild(grandparentGen);
+                
+                if (familyData.parents.length > 0) {
+                    const connector = document.createElement('div');
+                    connector.className = 'connector-line vertical-line';
+                    tree.appendChild(connector);
+                }
             }
 
             if (familyData.parents.length > 0) {
@@ -536,6 +662,12 @@
                     parentGen.appendChild(createPersonCard(person, 'parent'));
                 });
                 tree.appendChild(parentGen);
+                
+                if (familyData.children.length > 0) {
+                    const connector = document.createElement('div');
+                    connector.className = 'connector-line vertical-line';
+                    tree.appendChild(connector);
+                }
             }
 
             if (familyData.children.length > 0) {
@@ -585,7 +717,41 @@
             document.getElementById('personGeneration').value = generation;
             document.getElementById('personId').value = '';
             updateModalLabels();
+            populateNameSuggestions();
             document.getElementById('personModal').classList.add('active');
+        }
+
+        function populateNameSuggestions() {
+            const t = translations[currentLanguage];
+            const nameSuggestionsDiv = document.getElementById('nameSuggestions');
+            const spouseSuggestionsDiv = document.getElementById('spouseNameSuggestions');
+            
+            const allNames = [...marathiNames.male, ...marathiNames.female];
+            
+            nameSuggestionsDiv.innerHTML = '';
+            spouseSuggestionsDiv.innerHTML = '';
+            
+            allNames.forEach(name => {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'name-suggestion';
+                suggestionDiv.innerHTML = `
+                    <div class="name-suggestion-en">${name.en}</div>
+                    <div class="name-suggestion-mr">${name.mr}</div>
+                `;
+                suggestionDiv.onclick = () => {
+                    document.getElementById('personName').value = name.mr;
+                };
+                nameSuggestionsDiv.appendChild(suggestionDiv);
+                
+                const spouseSuggestionDiv = suggestionDiv.cloneNode(true);
+                spouseSuggestionDiv.onclick = () => {
+                    document.getElementById('spouseName').value = name.mr;
+                };
+                spouseSuggestionsDiv.appendChild(spouseSuggestionDiv);
+            });
+            
+            document.querySelectorAll('.marathi-helper-title')[0].textContent = t.marathiHelper;
+            document.querySelectorAll('.marathi-helper-title')[1].textContent = t.marathiHelper;
         }
 
         function updateModalLabels() {
@@ -625,6 +791,7 @@
                 document.getElementById('personGeneration').value = generation;
                 document.getElementById('personId').value = id;
                 updateModalLabels();
+                populateNameSuggestions();
                 document.getElementById('personModal').classList.add('active');
             }
         }
