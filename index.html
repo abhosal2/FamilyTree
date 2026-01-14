@@ -297,7 +297,7 @@
 
         async function loadData() {
             try {
-                const result = await window.storage.get('family-tree-data');
+                const result = await window.storage.get('family-tree-data', true);
                 if (result && result.value) {
                     familyData = JSON.parse(result.value);
                 }
@@ -309,7 +309,7 @@
 
         async function saveData() {
             try {
-                await window.storage.set('family-tree-data', JSON.stringify(familyData));
+                await window.storage.set('family-tree-data', JSON.stringify(familyData), true);
                 showSaveIndicator();
             } catch (e) {
                 console.error('Error saving data:', e);
