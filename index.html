@@ -1,639 +1,466 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Family Tree</title>
-  <style>
-    :root{
-      --bg:#ffffff;
-      --ink:#1b1b1b;
-      --line:#2b2b2b;
-      --boxStroke:#1f2937;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      /* Default box colors (can be changed in UI) */
-      --blue:#b9d8ff;
-      --red:#ffb7b7;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-      --shadow: 0 10px 20px rgba(0,0,0,.08);
-    }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
 
-    html,body{height:100%; margin:0;}
-    body{
-      background: var(--bg);
-      color: var(--ink);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
 
-    .wrap{
-      width:min(1300px, 96vw);
-      margin:0 auto;
-      padding: 14px 12px 20px;
-    }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
 
-    h1{
-      text-align:center;
-      margin: 6px 0 10px;
-      font-size: 30px;
-      letter-spacing: .3px;
-      font-weight: 800;
-    }
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
 
-    .controls{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:center;
-      flex-wrap:wrap;
-      margin: 6px 0 14px;
-    }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
 
-    .btn{
-      background:#111;
-      color:#fff;
-      border:0;
-      border-radius:12px;
-      padding:10px 12px;
-      font-weight:700;
-      cursor:pointer;
-      box-shadow: var(--shadow);
-    }
-    .btn.secondary{
-      background:#fff;
-      color:#111;
-      border:1px solid rgba(0,0,0,.2);
-      box-shadow:none;
-    }
+        .tree-container {
+            overflow-x: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
 
-    .status{
-      font-size: 13px;
-      color: rgba(0,0,0,0.72);
-      padding: 8px 10px;
-      border: 1px dashed rgba(0,0,0,0.25);
-      border-radius: 12px;
-      background: rgba(0,0,0,0.03);
-      min-width: 280px;
-      text-align:center;
-    }
+        .tree {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
 
-    .picker{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      padding: 8px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(0,0,0,.12);
-      background: rgba(0,0,0,.02);
-      font-size: 13px;
-    }
-    .picker label{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-weight: 700;
-    }
-    .picker input[type="color"]{
-      width: 34px;
-      height: 26px;
-      border: 0;
-      padding: 0;
-      background: transparent;
-      cursor: pointer;
-    }
+        .generation {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
 
-    .canvas{
-      background:#fff;
-      border:1px solid rgba(0,0,0,.10);
-      border-radius:16px;
-      overflow:hidden;
-      box-shadow: 0 14px 40px rgba(0,0,0,.08);
-      height: min(78vh, 720px);   /* ✅ makes it fill page better */
-      position: relative;
-    }
+        .person-card {
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 180px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            position: relative;
+        }
 
-    .hint{
-      position:absolute;
-      right: 10px;
-      bottom: 10px;
-      font-size: 12px;
-      color: rgba(0,0,0,.65);
-      background: rgba(255,255,255,.85);
-      border: 1px solid rgba(0,0,0,.10);
-      padding: 6px 8px;
-      border-radius: 10px;
-      backdrop-filter: blur(6px);
-    }
+        .person-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
 
-    svg{
-      width:100%;
-      height:100%;
-      display:block;
-      user-select:none;
-      touch-action:none; /* allow custom panning on touch */
-      background: #fff;
-    }
+        .person-card.grandparent {
+            border-color: #f39c12;
+            background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+        }
 
-    /* Nodes */
-    .node-rect{
-      stroke: var(--boxStroke);
-      stroke-width: 1.8;
-      rx: 10;
-      ry: 10;
-      cursor: pointer;
-      filter: drop-shadow(0 6px 10px rgba(0,0,0,.08));
-    }
-    .node-text{
-      font-weight: 750;
-      font-size: 14px;
-      fill: #111;
-      dominant-baseline: middle;
-      text-anchor: middle;
-      pointer-events: none;
-    }
+        .person-card.parent {
+            border-color: #3498db;
+        }
 
-    /* Edges */
-    .edge{
-      stroke: var(--line);
-      stroke-width: 2;
-      fill: none;
-      opacity: .9;
-    }
+        .person-card.child {
+            border-color: #2ecc71;
+        }
 
-    /* Appear animation (top -> bottom) */
-    .nodeGroup{
-      opacity: 0;
-      transform-origin: center;
-      transform: translateY(-6px) scale(0.98);
-    }
-    .nodeGroup.show{
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      transition: opacity 500ms ease, transform 500ms ease;
-    }
-    .edge.hide{ opacity: 0; }
-    .edge.show{
-      opacity: 1;
-      transition: opacity 420ms ease;
-    }
+        .person-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
 
-    @media (prefers-reduced-motion: reduce){
-      .nodeGroup{ opacity:1; transform:none; }
-      .nodeGroup.show{ transition:none; }
-      .edge.show{ transition:none; }
-    }
-  </style>
+        .person-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .person-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .person-actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .edit-btn {
+            background: #3498db;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        .cancel-btn {
+            background: #95a5a6;
+        }
+
+        .save-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 2000;
+        }
+
+        .save-indicator.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
-
 <body>
-  <div class="wrap">
-    <h1>Family Tree</h1>
+    <div class="save-indicator" id="saveIndicator">Changes saved!</div>
+    
+    <div class="container">
+        <h1>🌳 Our Family Tree</h1>
+        
+        <div class="controls">
+            <button onclick="addPerson('grandparent')">Add Grandparent</button>
+            <button onclick="addPerson('parent')">Add Parent</button>
+            <button onclick="addPerson('child')">Add Child</button>
+            <button onclick="resetTree()" class="delete-btn">Reset Tree</button>
+        </div>
 
-    <div class="controls">
-      <button class="btn" id="saveBtn">Save</button>
-      <button class="btn secondary" id="reloadBtn">Reload</button>
-      <button class="btn secondary" id="animateBtn">Play Animation</button>
-
-      <button class="btn secondary" id="fitBtn">Fit</button>
-      <button class="btn secondary" id="zoomOutBtn">–</button>
-      <button class="btn secondary" id="zoomInBtn">+</button>
-
-      <div class="picker" title="Change box colors">
-        <label>Blue <input type="color" id="blueColor" value="#b9d8ff"></label>
-        <label>Red <input type="color" id="redColor" value="#ffb7b7"></label>
-      </div>
-
-      <div class="status" id="status">Loading…</div>
+        <div class="tree-container">
+            <div class="tree" id="familyTree"></div>
+        </div>
     </div>
 
-    <div class="canvas" id="canvas">
-      <svg id="svg" viewBox="0 0 1200 700" aria-label="Family tree diagram">
-        <!-- Everything goes into this group so we can pan/zoom it -->
-        <g id="viewport">
-          <g id="edges"></g>
-          <g id="nodes"></g>
-        </g>
-      </svg>
-      <div class="hint">Drag to pan • Mouse wheel to zoom • Fit button</div>
+    <div class="modal" id="personModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Add Family Member</h2>
+            <form id="personForm">
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" id="personName" required>
+                </div>
+                <div class="form-group">
+                    <label>Birth Year:</label>
+                    <input type="text" id="personBirth">
+                </div>
+                <div class="form-group">
+                    <label>Additional Info:</label>
+                    <input type="text" id="personInfo" placeholder="Occupation, location, etc.">
+                </div>
+                <input type="hidden" id="personGeneration">
+                <input type="hidden" id="personId">
+                <div class="modal-actions">
+                    <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        let familyData = {
+            grandparents: [],
+            parents: [],
+            children: []
+        };
 
-  <script>
-    /************************************************************
-     * EDIT THESE VALUES
-     ************************************************************/
-    const SUPABASE_URL = "https://rwpfasczbtkhjttidqog.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_tOi0MCMp7Fq96k4_VhAOrw_PoUKqIws";
-    const TABLE_NAME = "family_tree";
-    const TREE_ID = "bhosale";
+        async function loadData() {
+            try {
+                const result = await window.storage.get('family-tree-data');
+                if (result && result.value) {
+                    familyData = JSON.parse(result.value);
+                }
+            } catch (e) {
+                console.log('No saved data found, starting fresh');
+            }
+            renderTree();
+        }
 
-    const statusEl = document.getElementById("status");
-    const saveBtn = document.getElementById("saveBtn");
-    const reloadBtn = document.getElementById("reloadBtn");
-    const animateBtn = document.getElementById("animateBtn");
+        async function saveData() {
+            try {
+                await window.storage.set('family-tree-data', JSON.stringify(familyData));
+                showSaveIndicator();
+            } catch (e) {
+                console.error('Error saving data:', e);
+            }
+        }
 
-    const fitBtn = document.getElementById("fitBtn");
-    const zoomInBtn = document.getElementById("zoomInBtn");
-    const zoomOutBtn = document.getElementById("zoomOutBtn");
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
 
-    const blueColor = document.getElementById("blueColor");
-    const redColor = document.getElementById("redColor");
+        function renderTree() {
+            const tree = document.getElementById('familyTree');
+            tree.innerHTML = '';
 
-    const svg = document.getElementById("svg");
-    const canvas = document.getElementById("canvas");
-    const viewportG = document.getElementById("viewport");
-    const edgesG = document.getElementById("edges");
-    const nodesG = document.getElementById("nodes");
+            if (familyData.grandparents.length > 0) {
+                const grandparentGen = document.createElement('div');
+                grandparentGen.className = 'generation';
+                familyData.grandparents.forEach(person => {
+                    grandparentGen.appendChild(createPersonCard(person, 'grandparent'));
+                });
+                tree.appendChild(grandparentGen);
+            }
 
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            if (familyData.parents.length > 0) {
+                const parentGen = document.createElement('div');
+                parentGen.className = 'generation';
+                familyData.parents.forEach(person => {
+                    parentGen.appendChild(createPersonCard(person, 'parent'));
+                });
+                tree.appendChild(parentGen);
+            }
 
-    function defaultTree(){
-      return {
-        root: ["Bhahusaheb Bhosale", "Vasanti Bhosale"],
-        children: [
-          { name: "Anil Bhosale", spouse: "", kids: ["Tejaswini Bhosale","Shweta Bhosale","Atharva Bhosale"] },
-          { name: "Satish Bhosale", spouse: "", kids: ["Aryan Bhosale"] },
-          { name: "Manish Bhosale", spouse: "", kids: ["Swanandi Bhosale"] },
-          { name: "Girish Bhosale", spouse: "", kids: ["Krish Bhosale","Parth Bhosale"] }
-        ],
-        colors: { blue: "#b9d8ff", red: "#ffb7b7" } // saved with tree
-      };
-    }
+            if (familyData.children.length > 0) {
+                const childGen = document.createElement('div');
+                childGen.className = 'generation';
+                familyData.children.forEach(person => {
+                    childGen.appendChild(createPersonCard(person, 'child'));
+                });
+                tree.appendChild(childGen);
+            }
+        }
 
-    let CURRENT = null;
+        function createPersonCard(person, generation) {
+            const card = document.createElement('div');
+            card.className = `person-card ${generation}`;
+            
+            card.innerHTML = `
+                <div class="person-name">${person.name}</div>
+                ${person.birth ? `<div class="person-info">Born: ${person.birth}</div>` : ''}
+                ${person.info ? `<div class="person-info">${person.info}</div>` : ''}
+                <div class="person-actions">
+                    <button class="edit-btn" onclick="editPerson('${person.id}', '${generation}')">Edit</button>
+                    <button class="delete-btn" onclick="deletePerson('${person.id}', '${generation}')">Delete</button>
+                </div>
+            `;
+            
+            return card;
+        }
 
-    function setStatus(msg){ statusEl.textContent = msg; }
+        function addPerson(generation) {
+            document.getElementById('modalTitle').textContent = 'Add Family Member';
+            document.getElementById('personForm').reset();
+            document.getElementById('personGeneration').value = generation;
+            document.getElementById('personId').value = '';
+            document.getElementById('personModal').classList.add('active');
+        }
 
-    /*************** Supabase load/save ***************/
-    async function loadFromSupabase(){
-      setStatus("Loading from Supabase…");
-      const { data, error } = await db
-        .from(TABLE_NAME)
-        .select("data")
-        .eq("id", TREE_ID)
-        .single();
+        function editPerson(id, generation) {
+            const genKey = generation === 'grandparent' ? 'grandparents' : generation === 'parent' ? 'parents' : 'children';
+            const person = familyData[genKey].find(p => p.id === id);
+            
+            if (person) {
+                document.getElementById('modalTitle').textContent = 'Edit Family Member';
+                document.getElementById('personName').value = person.name;
+                document.getElementById('personBirth').value = person.birth || '';
+                document.getElementById('personInfo').value = person.info || '';
+                document.getElementById('personGeneration').value = generation;
+                document.getElementById('personId').value = id;
+                document.getElementById('personModal').classList.add('active');
+            }
+        }
 
-      if (error) {
-        console.warn(error);
-        CURRENT = defaultTree();
-        applyColorsFromData();
-        renderDiagram(CURRENT);
-        fitToScreen();
-        playAnimation();
-        setStatus("Could not load row. Using defaults (you can still Save).");
-        return;
-      }
+        function deletePerson(id, generation) {
+            if (confirm('Are you sure you want to delete this person?')) {
+                const genKey = generation === 'grandparent' ? 'grandparents' : generation === 'parent' ? 'parents' : 'children';
+                familyData[genKey] = familyData[genKey].filter(p => p.id !== id);
+                saveData();
+                renderTree();
+            }
+        }
 
-      CURRENT = (data && data.data) ? data.data : defaultTree();
-      if (!CURRENT.colors) CURRENT.colors = { blue:"#b9d8ff", red:"#ffb7b7" };
+        function closeModal() {
+            document.getElementById('personModal').classList.remove('active');
+        }
 
-      applyColorsFromData();
-      renderDiagram(CURRENT);
-      fitToScreen();
-      playAnimation();
-      setStatus("Loaded ✅ Click a box to edit.");
-    }
+        function resetTree() {
+            if (confirm('Are you sure you want to reset the entire family tree? This cannot be undone.')) {
+                familyData = {
+                    grandparents: [],
+                    parents: [],
+                    children: []
+                };
+                saveData();
+                renderTree();
+            }
+        }
 
-    async function saveToSupabase(){
-      if (!CURRENT) return;
-      setStatus("Saving…");
-
-      const { error } = await db
-        .from(TABLE_NAME)
-        .update({ data: CURRENT })
-        .eq("id", TREE_ID);
-
-      if (error) {
-        console.error(error);
-        setStatus("Save failed ❌ Open console (F12) to see the exact error.");
-        alert("Save failed. Open console (F12) and copy the error message.");
-        return;
-      }
-      setStatus("Saved ✅");
-    }
-
-    saveBtn.addEventListener("click", saveToSupabase);
-    reloadBtn.addEventListener("click", loadFromSupabase);
-    animateBtn.addEventListener("click", () => playAnimation(true));
-
-    /*************** Color Picker ***************/
-    function setCSSVar(name, value){
-      document.documentElement.style.setProperty(name, value);
-    }
-
-    function applyColorsFromData(){
-      const b = CURRENT?.colors?.blue || "#b9d8ff";
-      const r = CURRENT?.colors?.red || "#ffb7b7";
-
-      blueColor.value = b;
-      redColor.value = r;
-
-      setCSSVar("--blue", b);
-      setCSSVar("--red", r);
-    }
-
-    blueColor.addEventListener("input", (e) => {
-      const v = e.target.value;
-      setCSSVar("--blue", v);
-      if (!CURRENT.colors) CURRENT.colors = {};
-      CURRENT.colors.blue = v;
-      setStatus("Color changed (not saved yet). Click Save.");
-    });
-
-    redColor.addEventListener("input", (e) => {
-      const v = e.target.value;
-      setCSSVar("--red", v);
-      if (!CURRENT.colors) CURRENT.colors = {};
-      CURRENT.colors.red = v;
-      setStatus("Color changed (not saved yet). Click Save.");
-    });
-
-    /*************** Diagram rendering ***************/
-    const BOX_W = 150;
-    const BOX_H = 42;
-    const GAP_X = 24;
-    const GAP_Y = 90;
-
-    function nodeKey(type, a, b){
-      return `${type}:${a}:${b ?? ""}`;
-    }
-
-    function renderDiagram(tree){
-      edgesG.innerHTML = "";
-      nodesG.innerHTML = "";
-
-      const rootA = tree.root?.[0] ?? "Root A";
-      const rootB = tree.root?.[1] ?? "Root B";
-
-      const children = Array.isArray(tree.children) ? tree.children : [];
-      const cols = Math.max(1, children.length);
-
-      const unitW = (BOX_W * 2) + GAP_X;
-      const totalW = cols * unitW + (cols - 1) * 50;
-      const startX = (1200 - totalW) / 2;
-
-      const rootY = 70;
-      const rootX = 600 - (BOX_W + 16);
-
-      const r1 = addNode(nodeKey("root",0), rootX, rootY, BOX_W, BOX_H, rootA, "blue");
-      const r2 = addNode(nodeKey("root",1), rootX + BOX_W + 32, rootY, BOX_W, BOX_H, rootB, "red");
-
-      // root marriage line
-      addEdge({x:r1.x2, y:r1.cy}, {x:r2.x1, y:r2.cy});
-
-      const rootMid = { x: (r1.cx + r2.cx) / 2, y: r1.cy };
-
-      // stem down
-      const stemTop = { x: rootMid.x, y: rootMid.y + (BOX_H/2) + 10 };
-      const couplesY = rootY + GAP_Y;
-      addEdge(stemTop, { x: stemTop.x, y: couplesY - 20 });
-
-      // bus line across
-      const busLeft = startX + (unitW/2);
-      const busRight = startX + (cols-1)*(unitW + 50) + (unitW/2);
-      addEdge({x:busLeft, y:couplesY-20}, {x:busRight, y:couplesY-20});
-
-      // connect stem to bus (vertical)
-      addEdge({x:stemTop.x, y:couplesY-20}, {x:stemTop.x, y:couplesY-20});
-
-      const allNodeGroups = [];
-      const allEdges = [];
-
-      // helper to store edges as we create them
-      function addEdgeTracked(a,b){
-        const el = addEdge(a,b);
-        allEdges.push(el);
-        return el;
-      }
-
-      // track root nodes
-      allNodeGroups.push(r1.group, r2.group);
-
-      // rebuild edges with tracking
-      edgesG.innerHTML = "";
-      addEdgeTracked({x:r1.x2, y:r1.cy}, {x:r2.x1, y:r2.cy});
-      addEdgeTracked(stemTop, { x: stemTop.x, y: couplesY - 20 });
-      addEdgeTracked({x:busLeft, y:couplesY-20}, {x:busRight, y:couplesY-20});
-
-      for(let i=0;i<cols;i++){
-        const unitX = startX + i*(unitW + 50);
-
-        const childName = children[i]?.name ?? "";
-        const spouseName = children[i]?.spouse ?? "";
-        const kids = Array.isArray(children[i]?.kids) ? children[i].kids : [];
-
-        const c1 = addNode(nodeKey("child", i, "a"), unitX, couplesY, BOX_W, BOX_H, childName || "Name", "blue");
-        const c2 = addNode(nodeKey("child", i, "b"), unitX + BOX_W + GAP_X, couplesY, BOX_W, BOX_H, spouseName || "Name", "red");
-        allNodeGroups.push(c1.group, c2.group);
-
-        // marriage line + drop from bus
-        addEdgeTracked({x:c1.x2, y:c1.cy}, {x:c2.x1, y:c2.cy});
-        const coupleMidX = (c1.cx + c2.cx)/2;
-        addEdgeTracked({x:coupleMidX, y:couplesY-20}, {x:coupleMidX, y:couplesY});
-
-        const kidsY0 = couplesY + GAP_Y;
-        const kidGapY = 58;
-
-        kids.forEach((kidName, k)=>{
-          const kidY = kidsY0 + k * kidGapY;
-          const kidX = unitX + (unitW/2) - (BOX_W/2);
-
-          const kid = addNode(nodeKey("kid", i, k), kidX, kidY, BOX_W, BOX_H, kidName || "Name", (k%2===0 ? "blue":"red"));
-          allNodeGroups.push(kid.group);
-
-          if (k === 0){
-            addEdgeTracked({x:coupleMidX, y:couplesY + BOX_H}, {x:coupleMidX, y:kidY});
-          }
-          addEdgeTracked({x:coupleMidX, y:kidY + (BOX_H/2)}, {x:kidX, y:kidY + (BOX_H/2)});
+        document.getElementById('personForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('personName').value;
+            const birth = document.getElementById('personBirth').value;
+            const info = document.getElementById('personInfo').value;
+            const generation = document.getElementById('personGeneration').value;
+            const id = document.getElementById('personId').value;
+            
+            const genKey = generation === 'grandparent' ? 'grandparents' : generation === 'parent' ? 'parents' : 'children';
+            
+            if (id) {
+                const person = familyData[genKey].find(p => p.id === id);
+                if (person) {
+                    person.name = name;
+                    person.birth = birth;
+                    person.info = info;
+                }
+            } else {
+                familyData[genKey].push({
+                    id: Date.now().toString(),
+                    name,
+                    birth,
+                    info
+                });
+            }
+            
+            saveData();
+            renderTree();
+            closeModal();
         });
-      }
 
-      window.__NODE_GROUPS__ = allNodeGroups;
-      window.__EDGES__ = allEdges;
-    }
+        window.onclick = function(event) {
+            const modal = document.getElementById('personModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
 
-    function addNode(key, x, y, w, h, text, colorMode){
-      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
-      g.classList.add("nodeGroup");
-      g.dataset.key = key;
-
-      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
-      rect.classList.add("node-rect");
-      rect.setAttribute("fill", colorMode === "red" ? "var(--red)" : "var(--blue)");
-      rect.setAttribute("x", x);
-      rect.setAttribute("y", y);
-      rect.setAttribute("width", w);
-      rect.setAttribute("height", h);
-      rect.addEventListener("click", () => editNode(key));
-
-      const t = document.createElementNS("http://www.w3.org/2000/svg","text");
-      t.classList.add("node-text");
-      t.setAttribute("x", x + w/2);
-      t.setAttribute("y", y + h/2);
-      t.textContent = text;
-
-      g.appendChild(rect);
-      g.appendChild(t);
-      nodesG.appendChild(g);
-
-      return {
-        group: g,
-        x1: x, x2: x+w,
-        y1: y, y2: y+h,
-        cx: x+w/2,
-        cy: y+h/2
-      };
-    }
-
-    function addEdge(a, b){
-      const p = document.createElementNS("http://www.w3.org/2000/svg","path");
-      p.classList.add("edge", "hide");
-      const midY = (a.y + b.y)/2;
-      p.setAttribute("d", `M ${a.x} ${a.y} L ${a.x} ${midY} L ${b.x} ${midY} L ${b.x} ${b.y}`);
-      edgesG.appendChild(p);
-      return p;
-    }
-
-    function editNode(key){
-      if (!CURRENT) return;
-      const parts = key.split(":");
-      const type = parts[0];
-
-      if (type === "root"){
-        const idx = parseInt(parts[1], 10);
-        const prev = CURRENT.root?.[idx] ?? "";
-        const next = prompt("Edit name:", prev);
-        if (next === null) return;
-        CURRENT.root[idx] = next;
-        renderDiagram(CURRENT);
-        playAnimation(false);
-        setStatus("Edited (not saved yet). Click Save.");
-        return;
-      }
-
-      if (type === "child"){
-        const i = parseInt(parts[1], 10);
-        const side = parts[2];
-        const prev = side === "b" ? (CURRENT.children[i].spouse || "") : (CURRENT.children[i].name || "");
-        const next = prompt("Edit name:", prev);
-        if (next === null) return;
-        if (side === "b") CURRENT.children[i].spouse = next;
-        else CURRENT.children[i].name = next;
-        renderDiagram(CURRENT);
-        playAnimation(false);
-        setStatus("Edited (not saved yet). Click Save.");
-        return;
-      }
-
-      if (type === "kid"){
-        const i = parseInt(parts[1], 10);
-        const k = parseInt(parts[2], 10);
-        const prev = CURRENT.children[i]?.kids?.[k] ?? "";
-        const next = prompt("Edit name:", prev);
-        if (next === null) return;
-        CURRENT.children[i].kids[k] = next;
-        renderDiagram(CURRENT);
-        playAnimation(false);
-        setStatus("Edited (not saved yet). Click Save.");
-      }
-    }
-
-    /*************** Animation ***************/
-    function playAnimation(reset = true){
-      const groups = window.__NODE_GROUPS__ || [];
-      const edges = window.__EDGES__ || [];
-
-      if (reset){
-        groups.forEach(g => g.classList.remove("show"));
-        edges.forEach(e => { e.classList.remove("show"); e.classList.add("hide"); });
-      }
-
-      let delay = 0;
-      const step = 130;
-
-      groups.forEach((g)=>{
-        setTimeout(() => g.classList.add("show"), delay);
-        delay += step;
-      });
-
-      let edgeDelay = step * 2;
-      edges.forEach((e)=>{
-        setTimeout(() => { e.classList.remove("hide"); e.classList.add("show"); }, edgeDelay);
-        edgeDelay += 55;
-      });
-    }
-
-    /*************** Pan + Zoom + Fit ***************/
-    let scale = 1;
-    let panX = 0;
-    let panY = 0;
-
-    function applyTransform(){
-      viewportG.setAttribute("transform", `translate(${panX}, ${panY}) scale(${scale})`);
-    }
-
-    function fitToScreen(){
-      // Fit the diagram bounds into available canvas
-      const bbox = viewportG.getBBox();
-      const cw = canvas.clientWidth;
-      const ch = canvas.clientHeight;
-
-      // padding
-      const pad = 24;
-
-      const sx = (cw - pad*2) / bbox.width;
-      const sy = (ch - pad*2) / bbox.height;
-      scale = Math.max(0.3, Math.min(1.6, Math.min(sx, sy)));
-
-      // center
-      panX = (cw/2) - (bbox.x + bbox.width/2) * scale;
-      panY = (ch/2) - (bbox.y + bbox.height/2) * scale;
-
-      applyTransform();
-    }
-
-    fitBtn.addEventListener("click", fitToScreen);
-    zoomInBtn.addEventListener("click", () => { scale = Math.min(2.4, scale + 0.1); applyTransform(); });
-    zoomOutBtn.addEventListener("click", () => { scale = Math.max(0.2, scale - 0.1); applyTransform(); });
-
-    // Mouse wheel zoom
-    canvas.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      const delta = Math.sign(e.deltaY);
-      const factor = (delta > 0) ? 0.92 : 1.08;
-      scale = Math.max(0.2, Math.min(3, scale * factor));
-      applyTransform();
-    }, { passive:false });
-
-    // Drag to pan
-    let dragging = false;
-    let lastX = 0, lastY = 0;
-
-    canvas.addEventListener("pointerdown", (e) => {
-      dragging = true;
-      canvas.setPointerCapture(e.pointerId);
-      lastX = e.clientX;
-      lastY = e.clientY;
-    });
-
-    canvas.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      panX += dx;
-      panY += dy;
-      applyTransform();
-    });
-
-    canvas.addEventListener("pointerup", () => { dragging = false; });
-    canvas.addEventListener("pointercancel", () => { dragging = false; });
-
-    // Start
-    loadFromSupabase();
-    window.addEventListener("resize", () => { if (CURRENT) fitToScreen(); });
-  </script>
+        loadData();
+    </script>
 </body>
 </html>
