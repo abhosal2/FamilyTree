@@ -69,20 +69,6 @@
             transform: translateY(-1px);
         }
 
-        /* Language dropdown styling (keeps your theme) */
-        .lang-select {
-            padding: 12px 14px;
-            background: #1a1a1a;
-            color: #e0e0e0;
-            border: 1px solid #555;
-            border-radius: 2px;
-            cursor: pointer;
-            font-size: 14px;
-            font-family: '__RST Thermal__', 'Courier New', monospace;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
         .tree-container {
             overflow-x: auto;
             padding: 30px;
@@ -343,25 +329,83 @@
                 opacity: 1;
             }
         }
+
+        /* -----------------------------
+           Google Translate Popup Styles
+           ----------------------------- */
+        .translate-popup{
+            position: fixed;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            padding: 14px;
+            border-radius: 2px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+            z-index: 3000;
+            display: none;
+            min-width: 260px;
+        }
+
+        .translate-popup.show{ display:block; }
+
+        .translate-popup .popup-row{
+            display:flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .translate-popup .popup-title{
+            color:#e0e0e0;
+            letter-spacing:1px;
+            text-transform:uppercase;
+            font-size: 12px;
+        }
+
+        .translate-close{
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        /* Make Google widget match dark theme a bit */
+        .goog-te-gadget { color: #e0e0e0 !important; }
+        .goog-te-gadget select {
+            background:#1a1a1a;
+            color:#e0e0e0;
+            border:1px solid #555;
+            padding:8px;
+            border-radius:2px;
+            font-family:'__RST Thermal__','Courier New',monospace;
+        }
+        .goog-logo-link, .goog-te-gadget span { display:none !important; }
     </style>
 </head>
 <body>
     <div class="save-indicator" id="saveIndicator">Changes saved!</div>
 
     <div class="container">
-        <h1 id="titleText">FAMILY TREE</h1>
+        <h1>FAMILY TREE</h1>
 
         <div class="controls">
-            <button id="btnAddGrandparent" onclick="addPerson('grandparent')">Add Grandparent</button>
-            <button id="btnAddParent" onclick="addPerson('parent')">Add Parent</button>
-            <button id="btnAddChild" onclick="addPerson('child')">Add Child</button>
-            <button id="btnResetTree" onclick="resetTree()" class="delete-btn">Reset Tree</button>
+            <button onclick="addPerson('grandparent')">Add Grandparent</button>
+            <button onclick="addPerson('parent')">Add Parent</button>
+            <button onclick="addPerson('child')">Add Child</button>
+            <button onclick="resetTree()" class="delete-btn">Reset Tree</button>
 
-            <!-- NEW: Language dropdown (only addition in UI) -->
-            <select id="languageSelect" class="lang-select" onchange="setLanguage(this.value)">
-                <option value="en">EN</option>
-                <option value="es">ES</option>
-            </select>
+            <!-- NEW: Google Translate popup button -->
+            <button type="button" onclick="toggleTranslatePopup()">Translate</button>
+        </div>
+
+        <!-- NEW: Google Translate popup panel -->
+        <div class="translate-popup" id="translatePopup">
+            <div class="popup-row">
+                <div class="popup-title">Translate Page</div>
+                <button type="button" class="translate-close" onclick="toggleTranslatePopup(false)">Close</button>
+            </div>
+            <div id="google_translate_element"></div>
         </div>
 
         <div class="tree-container">
@@ -374,35 +418,35 @@
             <h2 id="modalTitle">Add Family Member</h2>
             <form id="personForm">
                 <div class="form-group">
-                    <label id="lblName">Name:</label>
+                    <label>Name:</label>
                     <input type="text" id="personName" required>
                 </div>
                 <div class="form-group">
-                    <label id="lblBirthYear">Birth Year:</label>
+                    <label>Birth Year:</label>
                     <input type="text" id="personBirth">
                 </div>
                 <div class="form-group">
-                    <label id="lblAdditionalInfo">Additional Info:</label>
+                    <label>Additional Info:</label>
                     <input type="text" id="personInfo" placeholder="Occupation, location, etc.">
                 </div>
                 <div class="form-group">
-                    <label id="lblSpouseName">Spouse/Partner Name:</label>
+                    <label>Spouse/Partner Name:</label>
                     <input type="text" id="spouseName" placeholder="Optional">
                 </div>
                 <div class="form-group">
-                    <label id="lblRelationshipType">Relationship Type:</label>
+                    <label>Relationship Type:</label>
                     <select id="spouseType">
-                        <option value="" id="optNone">None</option>
-                        <option value="wife" id="optWife">Wife</option>
-                        <option value="husband" id="optHusband">Husband</option>
-                        <option value="partner" id="optPartner">Partner</option>
+                        <option value="">None</option>
+                        <option value="wife">Wife</option>
+                        <option value="husband">Husband</option>
+                        <option value="partner">Partner</option>
                     </select>
                 </div>
                 <input type="hidden" id="personGeneration">
                 <input type="hidden" id="personId">
                 <div class="modal-actions">
-                    <button type="button" class="cancel-btn" id="btnCancel" onclick="closeModal()">Cancel</button>
-                    <button type="submit" id="btnSave">Save</button>
+                    <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
+                    <button type="submit">Save</button>
                 </div>
             </form>
         </div>
@@ -415,129 +459,29 @@
             children: []
         };
 
-        // ---------------------------
-        // NEW: Simple i18n dictionary
-        // ---------------------------
-        const i18n = {
-            en: {
-                title: "FAMILY TREE",
-                changesSaved: "Changes saved!",
-
-                addGrandparent: "Add Grandparent",
-                addParent: "Add Parent",
-                addChild: "Add Child",
-                resetTree: "Reset Tree",
-
-                modalAddTitle: "Add Family Member",
-                modalEditTitle: "Edit Family Member",
-
-                nameLabel: "Name:",
-                birthYearLabel: "Birth Year:",
-                additionalInfoLabel: "Additional Info:",
-                additionalInfoPlaceholder: "Occupation, location, etc.",
-                spouseNameLabel: "Spouse/Partner Name:",
-                spouseNamePlaceholder: "Optional",
-                relationshipTypeLabel: "Relationship Type:",
-
-                none: "None",
-                wife: "Wife",
-                husband: "Husband",
-                partner: "Partner",
-
-                cancel: "Cancel",
-                save: "Save",
-
-                born: "Born:",
-                edit: "Edit",
-                del: "Delete",
-
-                confirmDelete: "Are you sure you want to delete this person?",
-                confirmReset: "Are you sure you want to reset the entire family tree? This cannot be undone."
-            },
-
-            es: {
-                title: "ÁRBOL FAMILIAR",
-                changesSaved: "¡Cambios guardados!",
-
-                addGrandparent: "Agregar Abuelo/a",
-                addParent: "Agregar Padre/Madre",
-                addChild: "Agregar Hijo/a",
-                resetTree: "Reiniciar Árbol",
-
-                modalAddTitle: "Agregar Miembro",
-                modalEditTitle: "Editar Miembro",
-
-                nameLabel: "Nombre:",
-                birthYearLabel: "Año de nacimiento:",
-                additionalInfoLabel: "Información adicional:",
-                additionalInfoPlaceholder: "Ocupación, ubicación, etc.",
-                spouseNameLabel: "Nombre de pareja:",
-                spouseNamePlaceholder: "Opcional",
-                relationshipTypeLabel: "Tipo de relación:",
-
-                none: "Ninguno",
-                wife: "Esposa",
-                husband: "Esposo",
-                partner: "Pareja",
-
-                cancel: "Cancelar",
-                save: "Guardar",
-
-                born: "Nació:",
-                edit: "Editar",
-                del: "Eliminar",
-
-                confirmDelete: "¿Seguro que quieres eliminar a esta persona?",
-                confirmReset: "¿Seguro que quieres reiniciar todo el árbol familiar? Esto no se puede deshacer."
-            }
-        };
-
-        // NEW: current language (saved)
-        let currentLang = "en";
-
-        function t(key) {
-            return (i18n[currentLang] && i18n[currentLang][key]) ? i18n[currentLang][key] : (i18n.en[key] || key);
+        // -----------------------------
+        // Google Translate popup control
+        // -----------------------------
+        function toggleTranslatePopup(force) {
+            const popup = document.getElementById('translatePopup');
+            const show = (typeof force === "boolean") ? force : !popup.classList.contains('show');
+            popup.classList.toggle('show', show);
         }
 
-        function setLanguage(lang) {
-            currentLang = (i18n[lang] ? lang : "en");
-            localStorage.setItem("family-tree-lang", currentLang);
+        // Google Translate init callback
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement(
+                { pageLanguage: 'en', autoDisplay: false },
+                'google_translate_element'
+            );
+        }
 
-            // Update static UI text
-            document.getElementById("titleText").textContent = t("title");
-            document.getElementById("saveIndicator").textContent = t("changesSaved");
-
-            document.getElementById("btnAddGrandparent").textContent = t("addGrandparent");
-            document.getElementById("btnAddParent").textContent = t("addParent");
-            document.getElementById("btnAddChild").textContent = t("addChild");
-            document.getElementById("btnResetTree").textContent = t("resetTree");
-
-            document.getElementById("lblName").textContent = t("nameLabel");
-            document.getElementById("lblBirthYear").textContent = t("birthYearLabel");
-            document.getElementById("lblAdditionalInfo").textContent = t("additionalInfoLabel");
-            document.getElementById("personInfo").placeholder = t("additionalInfoPlaceholder");
-            document.getElementById("lblSpouseName").textContent = t("spouseNameLabel");
-            document.getElementById("spouseName").placeholder = t("spouseNamePlaceholder");
-            document.getElementById("lblRelationshipType").textContent = t("relationshipTypeLabel");
-
-            document.getElementById("optNone").textContent = t("none");
-            document.getElementById("optWife").textContent = t("wife");
-            document.getElementById("optHusband").textContent = t("husband");
-            document.getElementById("optPartner").textContent = t("partner");
-
-            document.getElementById("btnCancel").textContent = t("cancel");
-            document.getElementById("btnSave").textContent = t("save");
-
-            // Update modal title based on mode (add/edit)
-            const modalTitle = document.getElementById("modalTitle");
-            if (modalTitle.dataset.mode === "edit") {
-                modalTitle.textContent = t("modalEditTitle");
-            } else {
-                modalTitle.textContent = t("modalAddTitle");
-            }
-
-            // Re-render to update dynamic card text (Born/Edit/Delete etc.)
-            renderTree();
+        // Re-apply translation after dynamic DOM updates (add/edit/delete)
+        function reTranslateIfNeeded() {
+            const combo = document.querySelector('.goog-te-combo');
+            if (!combo) return;
+            // Trigger re-processing of the updated page
+            combo.dispatchEvent(new Event('change'));
         }
 
         async function loadData() {
@@ -549,16 +493,9 @@
             } catch (e) {
                 console.log('No saved data found, starting fresh');
             }
-
-            // Load saved language (fallback en)
-            const savedLang = localStorage.getItem("family-tree-lang");
-            if (savedLang && i18n[savedLang]) currentLang = savedLang;
-
-            // Set dropdown value + apply translations once
-            document.getElementById("languageSelect").value = currentLang;
-            setLanguage(currentLang);
-
             renderTree();
+            // In case translate is already active, re-run on first render
+            reTranslateIfNeeded();
         }
 
         async function saveData() {
@@ -620,6 +557,9 @@
                 });
                 tree.appendChild(childGen);
             }
+
+            // If user already used Google Translate, re-apply to new cards
+            reTranslateIfNeeded();
         }
 
         function createPersonCard(person, generation) {
@@ -628,16 +568,9 @@
 
             let spouseHTML = '';
             if (person.spouseName && person.spouseType) {
-                // Keep spouse type as your stored key, but display translated word
-                const spouseTypeDisplay =
-                    person.spouseType === "wife" ? t("wife") :
-                    person.spouseType === "husband" ? t("husband") :
-                    person.spouseType === "partner" ? t("partner") :
-                    person.spouseType.toUpperCase();
-
                 spouseHTML = `
                     <div class="spouse-info">
-                        <span class="spouse-label">${spouseTypeDisplay.toUpperCase()}</span>
+                        <span class="spouse-label">${person.spouseType.toUpperCase()}</span>
                         ${person.spouseName}
                     </div>
                 `;
@@ -645,12 +578,12 @@
 
             card.innerHTML = `
                 <div class="person-name">${person.name}</div>
-                ${person.birth ? `<div class="person-info">${t("born")} ${person.birth}</div>` : ''}
+                ${person.birth ? `<div class="person-info">Born: ${person.birth}</div>` : ''}
                 ${person.info ? `<div class="person-info">${person.info}</div>` : ''}
                 ${spouseHTML}
                 <div class="person-actions">
-                    <button class="edit-btn" onclick="editPerson('${person.id}', '${generation}')">${t("edit")}</button>
-                    <button class="delete-btn" onclick="deletePerson('${person.id}', '${generation}')">${t("del")}</button>
+                    <button class="edit-btn" onclick="editPerson('${person.id}', '${generation}')">Edit</button>
+                    <button class="delete-btn" onclick="deletePerson('${person.id}', '${generation}')">Delete</button>
                 </div>
             `;
 
@@ -658,14 +591,13 @@
         }
 
         function addPerson(generation) {
-            const title = document.getElementById('modalTitle');
-            title.dataset.mode = "add";
-            title.textContent = t('modalAddTitle');
-
+            document.getElementById('modalTitle').textContent = 'Add Family Member';
             document.getElementById('personForm').reset();
             document.getElementById('personGeneration').value = generation;
             document.getElementById('personId').value = '';
             document.getElementById('personModal').classList.add('active');
+            // Translate the modal if translate is active
+            reTranslateIfNeeded();
         }
 
         function editPerson(id, generation) {
@@ -673,10 +605,7 @@
             const person = familyData[genKey].find(p => p.id === id);
 
             if (person) {
-                const title = document.getElementById('modalTitle');
-                title.dataset.mode = "edit";
-                title.textContent = t('modalEditTitle');
-
+                document.getElementById('modalTitle').textContent = 'Edit Family Member';
                 document.getElementById('personName').value = person.name;
                 document.getElementById('personBirth').value = person.birth || '';
                 document.getElementById('personInfo').value = person.info || '';
@@ -685,11 +614,13 @@
                 document.getElementById('personGeneration').value = generation;
                 document.getElementById('personId').value = id;
                 document.getElementById('personModal').classList.add('active');
+                // Translate the modal if translate is active
+                reTranslateIfNeeded();
             }
         }
 
         function deletePerson(id, generation) {
-            if (confirm(t("confirmDelete"))) {
+            if (confirm('Are you sure you want to delete this person?')) {
                 const genKey = generation === 'grandparent' ? 'grandparents' : generation === 'parent' ? 'parents' : 'children';
                 familyData[genKey] = familyData[genKey].filter(p => p.id !== id);
                 saveData();
@@ -702,7 +633,7 @@
         }
 
         function resetTree() {
-            if (confirm(t("confirmReset"))) {
+            if (confirm('Are you sure you want to reset the entire family tree? This cannot be undone.')) {
                 familyData = {
                     grandparents: [],
                     parents: [],
@@ -758,7 +689,22 @@
             }
         }
 
+        // Close translate popup when clicking outside it
+        window.addEventListener('click', function(e) {
+            const popup = document.getElementById('translatePopup');
+            const translateBtn = document.querySelector('.controls button[type="button"]'); // the Translate button
+            if (!popup.classList.contains('show')) return;
+
+            // If clicked inside popup or on the translate button, ignore
+            if (popup.contains(e.target) || (translateBtn && translateBtn.contains(e.target))) return;
+
+            toggleTranslatePopup(false);
+        });
+
         loadData();
     </script>
+
+    <!-- Google Translate script (kept last) -->
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
