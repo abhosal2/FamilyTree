@@ -93,6 +93,32 @@
             position: relative;
         }
 
+        .couple-container {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            position: relative;
+        }
+
+        .couple-line {
+            width: 60px;
+            height: 2px;
+            background: #d4af37;
+            position: relative;
+        }
+
+        .couple-line::before {
+            content: '♥';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #d4af37;
+            font-size: 14px;
+            background: #252525;
+            padding: 0 8px;
+        }
+
         .connector-line {
             position: absolute;
             background: #555;
@@ -156,12 +182,7 @@
         }
 
         .spouse-info {
-            font-size: 13px;
-            color: #b8860b;
-            font-weight: 400;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #444;
+            display: none;
         }
 
         .spouse-label {
@@ -522,9 +543,7 @@
             if (familyData.grandparents.length > 0) {
                 const grandparentGen = document.createElement('div');
                 grandparentGen.className = 'generation';
-                familyData.grandparents.forEach(person => {
-                    grandparentGen.appendChild(createPersonCard(person, 'grandparent'));
-                });
+                renderGeneration(familyData.grandparents, 'grandparent', grandparentGen);
                 tree.appendChild(grandparentGen);
 
                 if (familyData.parents.length > 0) {
@@ -537,9 +556,7 @@
             if (familyData.parents.length > 0) {
                 const parentGen = document.createElement('div');
                 parentGen.className = 'generation';
-                familyData.parents.forEach(person => {
-                    parentGen.appendChild(createPersonCard(person, 'parent'));
-                });
+                renderGeneration(familyData.parents, 'parent', parentGen);
                 tree.appendChild(parentGen);
 
                 if (familyData.children.length > 0) {
@@ -552,14 +569,49 @@
             if (familyData.children.length > 0) {
                 const childGen = document.createElement('div');
                 childGen.className = 'generation';
-                familyData.children.forEach(person => {
-                    childGen.appendChild(createPersonCard(person, 'child'));
-                });
+                renderGeneration(familyData.children, 'child', childGen);
                 tree.appendChild(childGen);
             }
 
             // If user already used Google Translate, re-apply to new cards
             reTranslateIfNeeded();
+        }
+
+        function renderGeneration(people, generation, container) {
+            const processed = new Set();
+
+            people.forEach(person => {
+                if (processed.has(person.id)) return;
+
+                // Check if this person has a spouse/partner in the same generation
+                const partnerPerson = people.find(p => 
+                    !processed.has(p.id) && 
+                    p.spouseName === person.name && 
+                    person.spouseName === p.name
+                );
+
+                if (partnerPerson) {
+                    // Create couple container
+                    const coupleDiv = document.createElement('div');
+                    coupleDiv.className = 'couple-container';
+                    
+                    coupleDiv.appendChild(createPersonCard(person, generation));
+                    
+                    const line = document.createElement('div');
+                    line.className = 'couple-line';
+                    coupleDiv.appendChild(line);
+                    
+                    coupleDiv.appendChild(createPersonCard(partnerPerson, generation));
+                    
+                    container.appendChild(coupleDiv);
+                    processed.add(person.id);
+                    processed.add(partnerPerson.id);
+                } else {
+                    // Single person
+                    container.appendChild(createPersonCard(person, generation));
+                    processed.add(person.id);
+                }
+            });
         }
 
         function createPersonCard(person, generation) {
